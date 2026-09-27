@@ -1,0 +1,105 @@
+# Local development stack for the Transport Platform
+# 8 GB mode: only core services start by default (postgres, valkey, mailpit).
+# Add others when needed, e.g.:  docker compose --profile auth --profile files up -d
+# Profiles: auth (Keycloak), files (S3 + Gotenberg PDF), queue (SQS)
+# Start core:  docker compose up -d --build     Stop: docker compose down
+# All ports bind to 127.0.0.1 so nothing is exposed to your network.
+
+name: transport-dev
+
+services:
+  postgres:
+    build: ./docker/postgres
+    container_name: tp-postgres
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./docker/postgres/init:/docker-entrypoint-initdb.d:ro
+    command: ["postgres", "-c", "shared_buffers=128MB", "-c", "work_mem=8MB", "-c", "max_connections=40"]
+    mem_limit: 512m
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      retries: 5
+
+  keycloak:
+    # Local stand-in for Amazon Cognito (standard OIDC)
+    image: quay.io/keycloak/keycloak:26.3
+    container_name: tp-keycloak
+    command: start-dev
+    profiles: ["auth"]
+    mem_limit: 768m
+    environment:
+      JAVA_OPTS_KC_HEAP: "-XX:MaxRAMPercentage=65"
+      KC_BOOTSTRAP_ADMIN_USERNAME: ${KEYCLOAK_ADMIN}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak
+      KC_DB_USERNAME: ${POSTGRES_USER}
+      KC_DB_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "127.0.0.1:8180:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  valkey:
+    # Local stand-in for ElastiCache
+    image: valkey/valkey:8-alpine
+    container_name: tp-valkey
+    command: ["valkey-server", "--requirepass", "${VALKEY_PASSWORD}", "--maxmemory", "64mb"]
+    mem_limit: 128m
+    ports:
+      - "127.0.0.1:6379:6379"
+
+  s3:
+    # Local stand-in for Amazon S3
+    image: adobe/s3mock:latest
+    container_name: tp-s3
+    profiles: ["files"]
+    mem_limit: 384m
+    environment:
+      COM_ADOBE_TESTING_S3MOCK_STORE_INITIAL_BUCKETS: tp-documents,tp-pods,tp-exports
+      COM_ADOBE_TESTING_S3MOCK_STORE_RETAIN_FILES_ON_EXIT: "true"
+      COM_ADOBE_TESTING_S3MOCK_STORE_ROOT: /s3data
+    volumes:
+      - s3data:/s3data
+    ports:
+      - "127.0.0.1:9090:9090"
+
+  sqs:
+    # Local stand-in for Amazon SQS
+    image: softwaremill/elasticmq-native:latest
+    container_name: tp-sqs
+    profiles: ["queue"]
+    mem_limit: 128m
+    ports:
+      - "127.0.0.1:9324:9324"
+      - "127.0.0.1:9325:9325"
+
+  gotenberg:
+    # HTML to PDF (same container as production)
+    image: gotenberg/gotenberg:8
+    container_name: tp-gotenberg
+    profiles: ["files"]
+    mem_limit: 512m
+    ports:
+      - "127.0.0.1:3000:3000"
+
+  mailpit:
+    # Catches all outgoing email locally (stand-in for Amazon SES)
+    image: axllent/mailpit:latest
+    container_name: tp-mailpit
+    mem_limit: 64m
+    ports:
+      - "127.0.0.1:8025:8025"
+      - "127.0.0.1:1025:1025"
+
+volumes:
+  pgdata:
+  s3data:

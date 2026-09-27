@@ -1,0 +1,10 @@
+# Copy to C:\Users\<you>\.wslconfig then run: wsl --shutdown
+# Tuned for an 8 GB laptop. With 16 GB RAM use memory=8GB; with 32 GB use memory=16GB.
+[wsl2]
+memory=4GB
+processors=4
+swap=8GB
+
+[experimental]
+autoMemoryReclaim=gradual
+sparseVhd=true

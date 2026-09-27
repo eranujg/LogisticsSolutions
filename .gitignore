@@ -1,0 +1,11 @@
+.env
+*.pem
+*.key
+node_modules/
+build/
+.gradle/
+dist/
+.venv/
+__pycache__/
+.idea/
+*.log
