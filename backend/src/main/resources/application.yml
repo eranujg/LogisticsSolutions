@@ -35,6 +35,10 @@ springdoc:
     tags-sorter: alpha
     operations-sorter: alpha
 tms:
+  security:
+    jwt:
+      # Keycloak realm from docker compose (--profile auth). In AWS: the Cognito user pool issuer.
+      issuer-uri: http://localhost:8180/realms/tms
   tenancy:
     header-enabled: true
   platform:

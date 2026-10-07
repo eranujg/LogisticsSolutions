@@ -1,0 +1,82 @@
+{
+  "realm": "tms",
+  "displayName": "Transport Platform",
+  "enabled": true,
+  "sslRequired": "external",
+  "registrationAllowed": false,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "resetPasswordAllowed": true,
+  "bruteForceProtected": true,
+  "accessTokenLifespan": 900,
+  "ssoSessionIdleTimeout": 3600,
+  "passwordPolicy": "length(10) and digits(1) and upperCase(1) and notUsername",
+  "groups": [
+    {
+      "name": "tenants",
+      "subGroups": [
+        { "name": "demo" }
+      ]
+    }
+  ],
+  "clients": [
+    {
+      "clientId": "tms-web",
+      "name": "Transport Platform web app",
+      "enabled": true,
+      "publicClient": true,
+      "protocol": "openid-connect",
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": true,
+      "implicitFlowEnabled": false,
+      "serviceAccountsEnabled": false,
+      "redirectUris": ["http://localhost:4200/*", "http://localhost:8080/swagger-ui/*"],
+      "webOrigins": ["http://localhost:4200", "http://localhost:8080"],
+      "attributes": {
+        "pkce.code.challenge.method": "S256",
+        "post.logout.redirect.uris": "http://localhost:4200/*"
+      },
+      "protocolMappers": [
+        {
+          "name": "tenant groups",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-group-membership-mapper",
+          "consentRequired": false,
+          "config": {
+            "full.path": "true",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "userinfo.token.claim": "true",
+            "claim.name": "groups"
+          }
+        }
+      ]
+    }
+  ],
+  "users": [
+    {
+      "username": "owner@demo.local",
+      "email": "owner@demo.local",
+      "emailVerified": true,
+      "enabled": true,
+      "firstName": "Demo",
+      "lastName": "Owner",
+      "credentials": [
+        { "type": "password", "value": "DemoOwner-2026", "temporary": false }
+      ],
+      "groups": ["/tenants/demo"]
+    },
+    {
+      "username": "clerk@demo.local",
+      "email": "clerk@demo.local",
+      "emailVerified": true,
+      "enabled": true,
+      "firstName": "Demo",
+      "lastName": "Clerk",
+      "credentials": [
+        { "type": "password", "value": "DemoClerk-2026", "temporary": false }
+      ],
+      "groups": ["/tenants/demo"]
+    }
+  ]
+}

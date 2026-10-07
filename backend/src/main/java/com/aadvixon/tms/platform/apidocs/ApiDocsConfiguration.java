@@ -20,6 +20,7 @@ class ApiDocsConfiguration {
 
     private static final String TENANT = "tenant";
     private static final String USER = "user";
+    private static final String BEARER = "bearer";
 
     @Bean
     OpenAPI tmsOpenApi() {
@@ -28,10 +29,15 @@ class ApiDocsConfiguration {
                         .title("Transport Platform API")
                         .version("v1")
                         .description("""
-                                Development API explorer. Click **Authorize** and enter a tenant id \
-                                (from POST /api/v1/platform/tenants) and any user name. \
-                                Headers are accepted only when tms.tenancy.header-enabled=true."""))
+                                Development API explorer. Click **Authorize** and either paste a Keycloak \
+                                access token (bearer), or, in development header mode, enter a tenant id \
+                                (from POST /api/v1/platform/tenants) and any user name."""))
                 .components(new Components()
+                        .addSecuritySchemes(BEARER, new SecurityScheme()
+                                .type(SecurityScheme.Type.HTTP)
+                                .scheme("bearer")
+                                .bearerFormat("JWT")
+                                .description("Access token from Keycloak (realm tms)"))
                         .addSecuritySchemes(TENANT, new SecurityScheme()
                                 .type(SecurityScheme.Type.APIKEY)
                                 .in(SecurityScheme.In.HEADER)
@@ -42,6 +48,7 @@ class ApiDocsConfiguration {
                                 .in(SecurityScheme.In.HEADER)
                                 .name(TenantFilter.USER_HEADER)
                                 .description("User name recorded in the audit log")))
+                .addSecurityItem(new SecurityRequirement().addList(BEARER))
                 .addSecurityItem(new SecurityRequirement().addList(TENANT).addList(USER));
     }
 }
