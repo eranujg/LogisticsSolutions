@@ -36,8 +36,12 @@ public class NumberSeriesService {
                     .query(String.class)
                     .single();
         } catch (DataAccessException e) {
-            throw new BusinessRuleException("No active number series for " + documentType
-                    + " in financial year " + financialYear + ". Set one up first.");
+            String cause = e.getMostSpecificCause().getMessage();
+            if (cause != null && cause.contains("No active number series")) {
+                throw new BusinessRuleException("No active number series for " + documentType
+                        + " in financial year " + financialYear + ". Set one up first.");
+            }
+            throw e;
         }
     }
 

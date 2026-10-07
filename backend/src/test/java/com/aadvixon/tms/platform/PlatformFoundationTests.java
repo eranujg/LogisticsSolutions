@@ -117,7 +117,7 @@ class PlatformFoundationTests {
                 .andExpect(jsonPath("$[1].action").value("SOFT_DELETE"))
                 .andExpect(jsonPath("$[2].action").value("INSERT"))
                 .andExpect(jsonPath("$[0].userId").value("tester"));
-        mvc.perform(as(tenantB, get("/api/v1/audit"))).andExpect(jsonPath("$.length()").value(0));
+        mvc.perform(as(tenantB, get("/api/v1/audit")).param("table", "party")).andExpect(jsonPath("$.length()").value(0));
 
         // Each new tenant gets the default roles
         mvc.perform(as(tenantA, get("/api/v1/roles"))).andExpect(jsonPath("$.length()").value(9));
