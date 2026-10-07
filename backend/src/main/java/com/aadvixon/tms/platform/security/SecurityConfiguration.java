@@ -8,6 +8,7 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.oauth2.jwt.BadJwtException;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.security.oauth2.jwt.JwtDecoderInitializationException;
 import org.springframework.security.oauth2.jwt.JwtDecoders;
 import org.springframework.security.oauth2.jwt.SupplierJwtDecoder;
 import org.springframework.security.web.SecurityFilterChain;
@@ -56,6 +57,14 @@ class SecurityConfiguration {
                 throw new BadJwtException("Login is not configured (tms.security.jwt.issuer-uri is empty)");
             };
         }
-        return new SupplierJwtDecoder(() -> JwtDecoders.fromIssuerLocation(issuerUri));
+        JwtDecoder lazy = new SupplierJwtDecoder(() -> JwtDecoders.fromIssuerLocation(issuerUri));
+        return token -> {
+            try {
+                return lazy.decode(token);
+            } catch (JwtDecoderInitializationException e) {
+                // Identity provider unreachable: reject the token (401), never a server error.
+                throw new BadJwtException("Login service is not reachable; try again shortly", e);
+            }
+        };
     }
 }
