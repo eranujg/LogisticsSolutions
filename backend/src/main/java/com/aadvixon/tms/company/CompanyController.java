@@ -60,7 +60,7 @@ class CompanyController {
             String addressLine2,
             String cityName,
             String postalCode,
-            List<@Valid TaxRegistrationService.TaxRegistrationInput> taxRegistrations) {
+            @Valid List<TaxRegistrationService.TaxRegistrationInput> taxRegistrations) {
     }
 
     private static final String OWNER_TYPE = "COMPANY";

@@ -99,7 +99,7 @@ class PartyController {
             UUID salespersonUserId,
             String notes,
             List<@Valid AddressRequest> addresses,
-            List<@Valid TaxRegistrationService.TaxRegistrationInput> taxRegistrations) {
+            @Valid List<TaxRegistrationService.TaxRegistrationInput> taxRegistrations) {
     }
 
     record DuplicateMatch(UUID id, String code, String legalName, String mobile, String matchedOn) {
