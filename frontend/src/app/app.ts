@@ -1,20 +1,23 @@
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { SystemInfo, SystemInfoService } from './core/system/system-info.service';
 
 @Component({
   selector: 'app-root',
   templateUrl: './app.html',
   styleUrl: './app.scss'
 })
-export class App implements OnInit {
-  status = signal('Checking backend...');
+export class App {
+  readonly info = signal<SystemInfo | null>(null);
+  readonly error = signal<string | null>(null);
 
-  async ngOnInit() {
-    try {
-      const res = await fetch('/api/v1/system/info');
-      const data = await res.json();
-      this.status.set(`Backend OK | Database time: ${data.databaseTime} | Tenants: ${data.tenantCount}`);
-    } catch {
-      this.status.set('Backend not reachable');
-    }
+  constructor() {
+    inject(SystemInfoService)
+      .getInfo()
+      .pipe(takeUntilDestroyed())
+      .subscribe({
+        next: (info) => this.info.set(info),
+        error: () => this.error.set('Backend not reachable')
+      });
   }
 }
