@@ -48,19 +48,26 @@ jobs:
       - name: Report errors as annotations
         if: failure()
         run: |
-          # Compiler errors and Gradle failure summary
-          grep -E "\.java:[0-9]+: error:|^> |What went wrong" build.log | head -40 | sed 's/^/::error::/' || true
-          # Failed tests: test name + failure message (first lines)
-          for f in build/test-results/test/*.xml; do
-            [ -f "$f" ] || continue
-            python3 - "$f" <<'PY'
-          import sys, xml.etree.ElementTree as ET
-          for tc in ET.parse(sys.argv[1]).getroot().iter('testcase'):
-              for fl in list(tc.iter('failure')) + list(tc.iter('error')):
-                  msg = (fl.get('message') or '') + ' | ' + ' '.join((fl.text or '').split())[:1500]
-                  print('::error title=' + tc.get('name') + '::' + msg.replace('\n', ' ')[:3000])
+          python3 - <<'PY'
+          import glob, re, xml.etree.ElementTree as ET
+          lines = []
+          for f in sorted(glob.glob('build/test-results/test/*.xml')):
+              for tc in ET.parse(f).getroot().iter('testcase'):
+                  for fl in list(tc.iter('failure')) + list(tc.iter('error')):
+                      body = ' '.join((fl.text or '').split())
+                      causes = re.findall(r'Caused by: ([^\n]{0,400}?) at ', body)
+                      lines.append('TEST ' + tc.get('classname', '') + '.' + tc.get('name', '') + ': '
+                                   + (fl.get('message') or '')[:800] + ' || CAUSES: ' + ' | '.join(causes[-3:]))
+          try:
+              log = open('build.log', errors='replace').read().splitlines()
+          except FileNotFoundError:
+              log = []
+          for i, l in enumerate(log):
+              if re.search(r'\.java:\d+: error:|What went wrong', l):
+                  lines.append('BUILD ' + l.strip() + ' ' + (log[i + 1].strip() if i + 1 < len(log) else ''))
+          text = '%0A'.join(x.replace('%', '%25').replace('\r', '').replace('\n', ' ') for x in lines[:40])
+          print('::error title=Backend failures::' + (text or 'see job log')[:60000])
           PY
-          done
       - name: Upload test reports
         if: failure()
         uses: actions/upload-artifact@v4
