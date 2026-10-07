@@ -20,11 +20,20 @@ management:
         include: health,info
 
 # ---------------------------------------------------------------------------
-# DEVELOPMENT ONLY. Both must be false in any shared or customer environment.
+# DEVELOPMENT ONLY. Both must be false in any shared or customer environment
+# (and springdoc.api-docs.enabled / springdoc.swagger-ui.enabled set to false).
 #   header-enabled: tenant and user come from X-Tenant-Id / X-User-Id headers
 #                   (replaced by verified Keycloak/Cognito tokens later)
 #   admin-api-enabled: /api/v1/platform/tenants (create tenants) without login
 # ---------------------------------------------------------------------------
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui
+    persist-authorization: true    # remembers the tenant id across page reloads
+    tags-sorter: alpha
+    operations-sorter: alpha
 tms:
   tenancy:
     header-enabled: true
