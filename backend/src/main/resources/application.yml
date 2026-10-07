@@ -18,3 +18,15 @@ management:
     web:
       exposure:
         include: health,info
+
+# ---------------------------------------------------------------------------
+# DEVELOPMENT ONLY. Both must be false in any shared or customer environment.
+#   header-enabled: tenant and user come from X-Tenant-Id / X-User-Id headers
+#                   (replaced by verified Keycloak/Cognito tokens later)
+#   admin-api-enabled: /api/v1/platform/tenants (create tenants) without login
+# ---------------------------------------------------------------------------
+tms:
+  tenancy:
+    header-enabled: true
+  platform:
+    admin-api-enabled: true
