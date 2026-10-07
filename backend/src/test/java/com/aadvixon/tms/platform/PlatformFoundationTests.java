@@ -165,10 +165,11 @@ class PlatformFoundationTests {
         assertThat(next(tenant)).isEqualTo("LDH/00001");
 
         // A rolled-back booking returns its number to the series
-        tx.executeWithoutResult(status -> {
-            TenantContext.runAsTenant(tenant, "tester", () -> numberSeries.next("GR", null, "2026-27"));
+        TenantContext.runAsTenant(tenant, "tester", () -> tx.execute(status -> {
+            numberSeries.next("GR", null, "2026-27");
             status.setRollbackOnly();
-        });
+            return null;
+        }));
         assertThat(next(tenant)).isEqualTo("LDH/00002");
 
         // Another tenant has no access to this series

@@ -12,6 +12,10 @@ import java.util.function.Supplier;
  * {@code tms_app} role with {@code app.tenant_id} set, so PostgreSQL row-level
  * security limits them to their own rows. System scope (tenant provisioning)
  * runs as the pool user and must be used sparingly.
+ *
+ * <p>Set the context <em>before</em> starting a transaction: a connection is
+ * prepared when it is taken from the pool, so a transaction opened without a
+ * tenant stays without one (and sees no tenant data).
  */
 public final class TenantContext {
 
