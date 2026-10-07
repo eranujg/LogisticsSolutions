@@ -42,7 +42,25 @@ jobs:
           java-version: "25"
       - uses: gradle/actions/setup-gradle@v4
       - name: Build and test (Testcontainers PostgreSQL)
-        run: ./gradlew build --no-daemon
+        run: |
+          set -o pipefail
+          ./gradlew build --no-daemon 2>&1 | tee build.log
+      - name: Report errors as annotations
+        if: failure()
+        run: |
+          # Compiler errors and Gradle failure summary
+          grep -E "\.java:[0-9]+: error:|^> |What went wrong" build.log | head -40 | sed 's/^/::error::/' || true
+          # Failed tests: test name + failure message (first lines)
+          for f in build/test-results/test/*.xml; do
+            [ -f "$f" ] || continue
+            python3 - "$f" <<'PY'
+          import sys, xml.etree.ElementTree as ET
+          for tc in ET.parse(sys.argv[1]).getroot().iter('testcase'):
+              for fl in list(tc.iter('failure')) + list(tc.iter('error')):
+                  msg = (fl.get('message') or '') + ' | ' + ' '.join((fl.text or '').split())[:1500]
+                  print('::error title=' + tc.get('name') + '::' + msg.replace('\n', ' ')[:3000])
+          PY
+          done
       - name: Upload test reports
         if: failure()
         uses: actions/upload-artifact@v4
