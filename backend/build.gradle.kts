@@ -29,6 +29,7 @@ dependencies {
 	implementation("org.springframework.modulith:spring-modulith-observability-api")
 	implementation("org.springframework.modulith:spring-modulith-starter-core")
 	implementation("org.springframework.modulith:spring-modulith-starter-jpa")
+	implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:3.1.1")
 	runtimeOnly("org.postgresql:postgresql")
 	runtimeOnly("org.springframework.modulith:spring-modulith-actuator")
 	runtimeOnly("org.springframework.modulith:spring-modulith-observability-core")

@@ -36,6 +36,34 @@ npm test       # ng test (vitest)
 
 Health check: `GET /api/v1/system/info` returns app name, database time and tenant count.
 
+## Backend structure
+
+Top-level packages under `com.aadvixon.tms` are modules: `platform` (tenancy, audit, recycle bin, numbering,
+tenant provisioning, errors), `company` (country packs, company, tax registrations), `location`, `geo`
+(cities, city services), `iam` (users, roles, permissions), `party` (consignors/consignees/bill-to).
+Data access uses `JdbcClient` with explicit SQL; row mappers use `platform.db.Rows`.
+
+## Multi-tenancy (read before touching data access)
+
+- Every tenant table has `tenant_id` and is secured in its migration with
+  `SELECT tms_secure_tenant_table('<table>');` (RLS policy + audit trigger + `updated_at` trigger).
+- `TenantAwareDataSource` prepares each pooled connection: `SET ROLE tms_app` plus `app.tenant_id` /
+  `app.user_id` from `TenantContext`. RLS then limits every query to the current tenant.
+- Set the tenant **before** starting a transaction (connections are prepared when taken from the pool).
+- `TenantContext.runAsSystem` bypasses RLS (pool user). Only for platform work such as tenant provisioning.
+- Dev only: tenant/user come from `X-Tenant-Id` / `X-User-Id` headers (`tms.tenancy.header-enabled`), and
+  `POST /api/v1/platform/tenants` is open (`tms.platform.admin-api-enabled`). Both must be false outside
+  local development; real login (Keycloak / Cognito) replaces them.
+- Masters are soft-deleted (`deleted_at`, `deleted_by`, `delete_reason`) and appear in the recycle bin
+  (`platform.recyclebin.RecycleBin` lists allowed tables). Issued documents are cancelled, never deleted.
+- `audit_log` is append-only and written only by triggers. Document numbers come from
+  `NumberSeriesService.next(...)` inside the transaction that saves the document (gapless).
+
+## CI
+
+GitHub Actions (`.github/workflows/ci.yml`): gitleaks, backend `./gradlew build` (Testcontainers
+PostgreSQL 17), frontend build + tests on Node 24. Backend failures are summarised in one annotation.
+
 ## Rules
 
 - **Memory**: laptop has 8 GB RAM; WSL is capped at 4 GB. Gradle stays at `-Xmx768m` (`backend/gradle.properties`), bootRun at `-Xmx512m` (`build.gradle.kts`). Never run backend tests, `bootRun` and `ng serve` at the same time.
