@@ -1,5 +1,6 @@
 package com.aadvixon.tms.platform.web;
 
+import com.aadvixon.tms.platform.security.PermissionDeniedException;
 import com.aadvixon.tms.platform.tenancy.TenantRequiredException;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -22,6 +23,11 @@ class ApiExceptionHandler {
     @ExceptionHandler(TenantRequiredException.class)
     ProblemDetail tenantRequired(TenantRequiredException e) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, e.getMessage());
+    }
+
+    @ExceptionHandler(PermissionDeniedException.class)
+    ProblemDetail permission(PermissionDeniedException e) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN, e.getMessage());
     }
 
     @ExceptionHandler(NotFoundException.class)

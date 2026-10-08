@@ -31,7 +31,7 @@ services:
     # Local stand-in for Amazon Cognito (standard OIDC)
     image: quay.io/keycloak/keycloak:26.3
     container_name: tp-keycloak
-    command: start-dev
+    command: start-dev --import-realm
     profiles: ["auth"]
     mem_limit: 768m
     environment:
@@ -42,6 +42,8 @@ services:
       KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak
       KC_DB_USERNAME: ${POSTGRES_USER}
       KC_DB_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - ./docker/keycloak:/opt/keycloak/data/import:ro
     ports:
       - "127.0.0.1:8180:8080"
     depends_on:

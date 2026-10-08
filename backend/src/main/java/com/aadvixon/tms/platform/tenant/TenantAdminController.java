@@ -29,7 +29,9 @@ class TenantAdminController {
 
     record CreateTenantRequest(
             @NotBlank @Size(max = 40) @Pattern(regexp = "[a-z0-9][a-z0-9-]*", message = "lowercase letters, digits and hyphens") String code,
-            @NotBlank @Size(max = 200) String name) {
+            @NotBlank @Size(max = 200) String name,
+            @jakarta.validation.constraints.Email String ownerEmail,
+            @Size(max = 150) String ownerName) {
     }
 
     record TenantResponse(UUID id, String code, String name, String status, OffsetDateTime createdAt) {
@@ -44,7 +46,7 @@ class TenantAdminController {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     TenantResponse create(@Valid @RequestBody CreateTenantRequest request) {
-        return provisioning.createTenant(request.code(), request.name());
+        return provisioning.createTenant(request.code(), request.name(), request.ownerEmail(), request.ownerName());
     }
 
     @GetMapping

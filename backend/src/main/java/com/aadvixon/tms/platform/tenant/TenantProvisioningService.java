@@ -21,6 +21,15 @@ public class TenantProvisioningService {
     }
 
     public TenantAdminController.TenantResponse createTenant(String code, String name) {
+        return createTenant(code, name, null, null);
+    }
+
+    /**
+     * Creates the tenant, its default roles and, optionally, an invited owner. The owner
+     * is linked to their login (Keycloak / Cognito) by email on first sign-in.
+     */
+    public TenantAdminController.TenantResponse createTenant(String code, String name, String ownerEmail,
+                                                             String ownerName) {
         UUID tenantId = UUID.randomUUID();
         // System scope with the new tenant id: the tenant row and its default
         // roles pass the row-level security checks for that tenant.
@@ -31,6 +40,20 @@ public class TenantProvisioningService {
                     .param("name", name)
                     .update();
             jdbc.sql("SELECT provision_tenant_defaults()").query().singleValue();
+            if (ownerEmail != null && !ownerEmail.isBlank()) {
+                UUID ownerId = jdbc.sql("INSERT INTO app_user (tenant_id, user_type, full_name, email, status, created_by)"
+                                + " VALUES (:tenant, 'STAFF', :name, CAST(:email AS citext), 'INVITED', 'system') RETURNING id")
+                        .param("tenant", tenantId)
+                        .param("name", ownerName == null || ownerName.isBlank() ? ownerEmail.trim() : ownerName)
+                        .param("email", ownerEmail.trim())
+                        .query(UUID.class)
+                        .single();
+                jdbc.sql("INSERT INTO user_role (tenant_id, user_id, role_id)"
+                                + " SELECT :tenant, :user, id FROM role WHERE tenant_id = :tenant AND code = 'OWNER'")
+                        .param("tenant", tenantId)
+                        .param("user", ownerId)
+                        .update();
+            }
             return find(tenantId);
         }));
     }
