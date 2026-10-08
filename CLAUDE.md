@@ -8,7 +8,7 @@ TMS for Indian transporters first; Canada, US and Australia later.
 - **Frontend** (`/frontend`): Angular (latest), standalone components, signals, SCSS.
 - **Database**: PostgreSQL 17 with PostGIS, pgvector, pg_partman, run via `docker compose`.
 - **Schema**: Flyway migrations in `backend/src/main/resources/db/migration`.
-- **Auth**: Keycloak (later; `--profile auth` in docker compose).
+- **Auth**: Keycloak locally (`docker compose --profile auth up -d`, realm `tms` imported from `docker/keycloak/tms-realm.json`); Cognito in AWS.
 
 ## Commands
 
@@ -58,6 +58,20 @@ Data access uses `JdbcClient` with explicit SQL; row mappers use `platform.db.Ro
   (`platform.recyclebin.RecycleBin` lists allowed tables). Issued documents are cancelled, never deleted.
 - `audit_log` is append-only and written only by triggers. Document numbers come from
   `NumberSeriesService.next(...)` inside the transaction that saves the document (gapless).
+
+## Login and permissions
+
+- Spring Security OAuth2 resource server validates bearer JWTs (`tms.security.jwt.issuer-uri`,
+  default `http://localhost:8180/realms/tms`). An unreachable identity provider gives 401, not 500.
+- Tenant comes from Keycloak groups `/tenants/<tenant-code>` (`groups` claim); `X-Tenant-Code` picks
+  one when a login belongs to several. The `app_user` is found by `external_subject` (token `sub`) or,
+  on first login, linked by email. `GET /api/v1/me` returns the user and permission codes.
+- `platform.security.PermissionInterceptor` checks `<module>.<action>` for every `/api/v1/**` call:
+  path segment -> module (`MODULES` map), GET=view, POST=create, PUT/PATCH=edit, DELETE=delete,
+  `.../restore`=edit. **Unknown paths are denied**: register every new resource in `MODULES`.
+- Dev header mode (no token) stays unrestricted. Dev realm users: `owner@demo.local` /
+  `DemoOwner-2026`, `clerk@demo.local` / `DemoClerk-2026` (group `/tenants/demo`; they still need
+  an `app_user` with that email in tenant `demo`). Development passwords only.
 
 ## CI
 

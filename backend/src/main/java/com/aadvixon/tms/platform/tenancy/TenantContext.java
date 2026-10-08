@@ -1,6 +1,7 @@
 package com.aadvixon.tms.platform.tenancy;
 
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.function.Supplier;
 
@@ -19,8 +20,21 @@ import java.util.function.Supplier;
  */
 public final class TenantContext {
 
-    /** Tenant and user for the current unit of work. */
-    public record Scope(UUID tenantId, String userId, boolean system) {
+    /**
+     * Tenant and user for the current unit of work.
+     *
+     * @param permissions permission codes of a signed-in user (e.g. {@code party.create});
+     *                    {@code null} means unrestricted (development header mode, system work)
+     */
+    public record Scope(UUID tenantId, String userId, boolean system, Set<String> permissions) {
+
+        public Scope(UUID tenantId, String userId, boolean system) {
+            this(tenantId, userId, system, null);
+        }
+
+        public boolean hasPermission(String code) {
+            return permissions == null || permissions.contains(code);
+        }
     }
 
     private static final ThreadLocal<Scope> CURRENT = new ThreadLocal<>();
