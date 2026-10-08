@@ -1,1 +1,294 @@
-/* You can add global styles to this file, and also import other style files */
+@use '@angular/material' as mat;
+
+// Angular Material theme. Primary is the carbon-copy indigo of a lorry receipt book;
+// highway amber is kept for focus and the active menu marker only.
+html {
+  @include mat.theme((
+    color: (primary: mat.$blue-palette, tertiary: mat.$orange-palette, theme-type: light),
+    typography: 'Instrument Sans',
+    density: -3
+  ));
+  @include mat.theme-overrides((
+    primary: #1f2a6b,
+    on-primary: #ffffff,
+    primary-container: #dfe3f6,
+    on-primary-container: #111847,
+    surface: #ffffff,
+    background: #f5f6fa,
+    error: #b42318
+  ));
+}
+
+:root {
+  --tms-ink-blue: #1f2a6b;
+  --tms-ink: #1b1d2a;
+  --tms-paper: #f5f6fa;
+  --tms-rule: #d9dce6;
+  --tms-muted: #5d6275;
+  --tms-amber: #e8a317;
+  --tms-red: #b42318;
+  --tms-green: #1d7a46;
+  color-scheme: light;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  font-size: 15px;
+}
+
+body {
+  margin: 0;
+  background: var(--tms-paper);
+  color: var(--tms-ink);
+  font-family: 'Instrument Sans', system-ui, sans-serif;
+  font-feature-settings: 'tnum' 1;
+  line-height: 1.5;
+}
+
+h1,
+h2,
+h3 {
+  line-height: 1.25;
+  margin: 0;
+}
+
+h1 {
+  font-size: 1.6rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+h2 {
+  font-size: 1.15rem;
+  font-weight: 600;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* ---- Page patterns shared by every screen ---- */
+
+.page-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+
+  p {
+    margin: 0.25rem 0 0;
+    color: var(--tms-muted);
+    max-width: 60ch;
+  }
+}
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  align-items: center;
+  margin-bottom: 0.9rem;
+}
+
+.panel {
+  overflow-x: auto;
+  background: #fff;
+  border: 1px solid var(--tms-rule);
+  border-radius: 8px;
+}
+
+.empty {
+  padding: 2.5rem 1rem;
+  text-align: center;
+  color: var(--tms-muted);
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+  gap: 1rem 1.25rem;
+
+  > .wide {
+    grid-column: 1 / -1;
+  }
+}
+
+.field {
+  min-width: 0;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.6rem;
+  margin-top: 1.5rem;
+}
+
+.form-error {
+  margin: 1rem 0 0;
+  padding: 0.6rem 0.8rem;
+  border-left: 3px solid var(--tms-red);
+  background: #fdf0ef;
+  color: var(--tms-red);
+}
+
+.code {
+  font-weight: 600;
+  color: var(--tms-ink-blue);
+}
+
+.muted {
+  color: var(--tms-muted);
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+
+.auth-message {
+  max-width: 30rem;
+  margin: 15vh auto;
+  padding: 0 1rem;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.company-form {
+  max-width: 64rem;
+  padding: 1.25rem 1.5rem 1.5rem;
+
+  section + section {
+    margin-top: 1.75rem;
+    padding-top: 1.25rem;
+    border-top: 1px solid var(--tms-rule);
+  }
+
+  h2 {
+    margin-bottom: 0.9rem;
+  }
+}
+
+/* ---- Material adjustments ---- */
+
+.full {
+  width: 100%;
+}
+
+.mat-mdc-form-field {
+  width: 100%;
+}
+
+.form-grid .mat-mdc-form-field {
+  margin-bottom: 0;
+}
+
+button.danger.mat-mdc-unelevated-button:not(:disabled) {
+  background: var(--tms-red);
+  color: #fff;
+}
+
+.tms-snack-success {
+  --mat-snack-bar-container-color: #12351f;
+}
+
+.tms-snack-error {
+  --mat-snack-bar-container-color: var(--tms-red);
+  --mat-snack-bar-button-color: #fff;
+}
+
+.data-table {
+  width: 100%;
+
+  .mat-mdc-header-cell {
+    font-weight: 600;
+    color: var(--tms-ink);
+  }
+
+  .mat-mdc-row:hover {
+    background: #f8f9fd;
+  }
+
+  .actions {
+    width: 6.5rem;
+    text-align: right;
+    white-space: nowrap;
+  }
+}
+
+.tag {
+  display: inline-block;
+  padding: 0.05rem 0.45rem;
+  border-radius: 4px;
+  background: #eceef5;
+  color: #3a3f55;
+  font-size: 0.78rem;
+  font-weight: 500;
+  white-space: nowrap;
+
+  &.warn {
+    background: #fff3d6;
+    color: #7a4f00;
+  }
+
+  &.ok {
+    background: #e2f3e8;
+    color: #14532d;
+  }
+
+  &.info {
+    background: #e4e8fb;
+    color: var(--tms-ink-blue);
+  }
+
+  &.danger {
+    background: #fdeceb;
+    color: var(--tms-red);
+  }
+}
+
+.icon-button-danger {
+  color: var(--tms-red);
+}
+
+.loading-bar {
+  height: 4px;
+}
+
+.search-field {
+  width: min(24rem, 100%);
+}
+
+.filter-field {
+  width: 12rem;
+}
+
+.toolbar .mat-mdc-form-field {
+  margin-bottom: -0.25rem;
+}
+
+input.upper {
+  text-transform: uppercase;
+}
+
+.mat-mdc-dialog-content .form-grid {
+  padding-top: 0.5rem;
+}

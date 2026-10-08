@@ -1,0 +1,50 @@
+<div class="shell">
+  <aside class="rail" aria-label="Main menu">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true">GR</span>
+      <span class="brand-name">Transport Platform</span>
+    </div>
+
+    <nav>
+      @for (group of nav(); track group.label) {
+        <p class="group-label">{{ group.label }}</p>
+        <ul>
+          @for (item of group.items; track item.path) {
+            <li>
+              <a [routerLink]="item.path" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: item.path === '/' }">
+                <span class="material-symbols-outlined" aria-hidden="true">{{ item.icon }}</span>
+                <span>{{ item.label }}</span>
+              </a>
+            </li>
+          }
+        </ul>
+      }
+    </nav>
+
+    @if (session.me(); as me) {
+      <div class="account">
+        <span class="avatar" aria-hidden="true">{{ initials() }}</span>
+        <div class="who">
+          <strong>{{ me.fullName }}</strong>
+          <span>{{ me.tenantCode ?? 'Development mode' }}</span>
+        </div>
+        <button type="button" class="sign-out" (click)="signOut()" aria-label="Sign out" title="Sign out">
+          <span class="material-symbols-outlined" aria-hidden="true">logout</span>
+        </button>
+      </div>
+    }
+  </aside>
+
+  <main class="content">
+    @if (session.loadError(); as error) {
+      <section class="blocked" role="alert">
+        <h1>You are signed in, but have no access yet</h1>
+        <p>{{ error }}</p>
+        <button type="button" (click)="signOut()">Sign out</button>
+      </section>
+    } @else {
+      <router-outlet />
+    }
+  </main>
+</div>
+

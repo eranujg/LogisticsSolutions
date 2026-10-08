@@ -1,0 +1,29 @@
+<header class="page-head">
+  <div>
+    <h1>Welcome, {{ session.me()?.fullName }}</h1>
+    @if (counts()) {
+      @if (remaining() > 0) {
+        <p>{{ remaining() }} setup {{ remaining() === 1 ? 'step is' : 'steps are' }} left before you can start booking GRs.</p>
+      } @else {
+        <p>Your company is set up. GR booking arrives in the next release.</p>
+      }
+    }
+  </div>
+</header>
+
+@if (steps().length) {
+  <ol class="checklist panel">
+    @for (step of steps(); track step.path) {
+      <li [class.done]="step.done">
+        <span class="mark" aria-hidden="true">
+          @if (step.done) { <span class="material-symbols-outlined">check</span> }
+        </span>
+        <div class="text">
+          <a [routerLink]="step.path">{{ step.label }}</a>
+          <span>{{ step.detail }}</span>
+        </div>
+        <span class="state">{{ step.done ? 'Done' : 'To do' }}</span>
+      </li>
+    }
+  </ol>
+}
