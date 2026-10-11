@@ -165,6 +165,9 @@ class ConsignmentTests {
                 .andExpect(status().isConflict());
 
         // Search and tenant isolation
+        mvc.perform(as(tenant, get("/api/v1/consignments/offices")))
+                .andExpect(jsonPath("$[0].code").value("LDH"))
+                .andExpect(jsonPath("$[0].consignmentNoteName").value("GR / Bilty"));
         mvc.perform(as(tenant, get("/api/v1/consignments")).param("q", "mehta"))
                 .andExpect(jsonPath("$.length()").value(org.hamcrest.Matchers.greaterThan(0)));
         mvc.perform(as(tenant, get("/api/v1/consignments")).param("status", "CANCELLED"))

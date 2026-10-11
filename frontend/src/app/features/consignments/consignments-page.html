@@ -1,0 +1,88 @@
+<header class="page-head">
+  <div>
+    <h1>GR register</h1>
+    <p>Every consignment booked, with its route, parties, payment and status.</p>
+  </div>
+  @if (session.can('gr.create')) {
+    <a mat-flat-button routerLink="/consignments/new"><mat-icon>add</mat-icon>Book GR</a>
+  }
+</header>
+
+<div class="toolbar">
+  <mat-form-field class="search-field">
+    <mat-icon matPrefix>search</mat-icon>
+    <mat-label>GR no, party, invoice or e-way bill</mat-label>
+    <input matInput type="search" [(ngModel)]="filters.q" (ngModelChange)="refresh()" />
+  </mat-form-field>
+  <mat-form-field class="date-field">
+    <mat-label>From</mat-label>
+    <input matInput type="date" [(ngModel)]="filters.from" (ngModelChange)="refresh()" />
+  </mat-form-field>
+  <mat-form-field class="date-field">
+    <mat-label>To</mat-label>
+    <input matInput type="date" [(ngModel)]="filters.to" (ngModelChange)="refresh()" />
+  </mat-form-field>
+  <mat-form-field class="filter-field">
+    <mat-label>Payment</mat-label>
+    <mat-select [(ngModel)]="filters.paymentType" (ngModelChange)="refresh()">
+      <mat-option [value]="null">All</mat-option>
+      @for (o of paymentOptions; track o.value) { <mat-option [value]="o.value">{{ o.label }}</mat-option> }
+    </mat-select>
+  </mat-form-field>
+  <mat-form-field class="filter-field">
+    <mat-label>Status</mat-label>
+    <mat-select [(ngModel)]="filters.status" (ngModelChange)="refresh()">
+      <mat-option [value]="null">All</mat-option>
+      @for (o of statusOptions; track o.value) { <mat-option [value]="o.value">{{ o.label }}</mat-option> }
+    </mat-select>
+  </mat-form-field>
+</div>
+
+<div class="panel">
+  @if (loading()) { <mat-progress-bar mode="indeterminate" class="loading-bar" /> }
+  <table mat-table [dataSource]="rows()" class="data-table clickable">
+    <ng-container matColumnDef="cnNo">
+      <th mat-header-cell *matHeaderCellDef>GR no</th>
+      <td mat-cell *matCellDef="let r" class="code"><a [routerLink]="['/consignments', r.id]" class="row-link">{{ r.cnNo }}</a></td>
+    </ng-container>
+    <ng-container matColumnDef="date">
+      <th mat-header-cell *matHeaderCellDef>Date</th>
+      <td mat-cell *matCellDef="let r">{{ r.cnDate }}</td>
+    </ng-container>
+    <ng-container matColumnDef="route">
+      <th mat-header-cell *matHeaderCellDef>Route</th>
+      <td mat-cell *matCellDef="let r">{{ r.originCity }} → {{ r.destinationCity }}</td>
+    </ng-container>
+    <ng-container matColumnDef="consignor">
+      <th mat-header-cell *matHeaderCellDef>Consignor</th>
+      <td mat-cell *matCellDef="let r">{{ r.consignorName }}</td>
+    </ng-container>
+    <ng-container matColumnDef="consignee">
+      <th mat-header-cell *matHeaderCellDef>Consignee</th>
+      <td mat-cell *matCellDef="let r">{{ r.consigneeName }}</td>
+    </ng-container>
+    <ng-container matColumnDef="payment">
+      <th mat-header-cell *matHeaderCellDef>Payment</th>
+      <td mat-cell *matCellDef="let r"><span class="tag">{{ humanize(r.paymentType) }}</span></td>
+    </ng-container>
+    <ng-container matColumnDef="packages">
+      <th mat-header-cell *matHeaderCellDef class="num">Pkgs / kg</th>
+      <td mat-cell *matCellDef="let r" class="num">{{ r.totalPackages }} / {{ r.chargeableWeightKg | number: '1.0-0' }}</td>
+    </ng-container>
+    <ng-container matColumnDef="total">
+      <th mat-header-cell *matHeaderCellDef class="num">Total</th>
+      <td mat-cell *matCellDef="let r" class="num">{{ r.total | number: '1.2-2' }}</td>
+    </ng-container>
+    <ng-container matColumnDef="status">
+      <th mat-header-cell *matHeaderCellDef>Status</th>
+      <td mat-cell *matCellDef="let r"><span [class]="'tag ' + statusTag(r.status)">{{ humanize(r.status) }}</span></td>
+    </ng-container>
+    <tr mat-header-row *matHeaderRowDef="columns"></tr>
+    <tr mat-row *matRowDef="let row; columns: columns" (click)="open(row)"></tr>
+    <tr class="mat-mdc-row" *matNoDataRow>
+      <td class="empty" [attr.colspan]="columns.length">
+        @if (loading()) { Loading… } @else { No consignments for these filters. }
+      </td>
+    </tr>
+  </table>
+</div>

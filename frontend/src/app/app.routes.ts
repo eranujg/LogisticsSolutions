@@ -37,6 +37,30 @@ export const routes: Routes = [
         loadComponent: () => import('./features/parties/parties-page').then((m) => m.PartiesPage)
       },
       {
+        path: 'consignments',
+        title: 'GR register',
+        canActivate: [permissionGuard('gr.view')],
+        loadComponent: () => import('./features/consignments/consignments-page').then((m) => m.ConsignmentsPage)
+      },
+      {
+        path: 'consignments/new',
+        title: 'Book GR',
+        canActivate: [permissionGuard('gr.create')],
+        loadComponent: () => import('./features/consignments/booking-page').then((m) => m.BookingPage)
+      },
+      {
+        path: 'consignments/:id/edit',
+        title: 'Edit GR',
+        canActivate: [permissionGuard('gr.edit')],
+        loadComponent: () => import('./features/consignments/booking-page').then((m) => m.BookingPage)
+      },
+      {
+        path: 'consignments/:id',
+        title: 'GR',
+        canActivate: [permissionGuard('gr.view')],
+        loadComponent: () => import('./features/consignments/consignment-view').then((m) => m.ConsignmentView)
+      },
+      {
         path: 'rate-cards',
         title: 'Rate cards',
         canActivate: [permissionGuard('rate_card.view')],

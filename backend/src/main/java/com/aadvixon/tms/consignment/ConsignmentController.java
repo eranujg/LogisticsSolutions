@@ -75,6 +75,10 @@ class ConsignmentController {
                        List<ChargeView> charges, List<EventView> events) {
     }
 
+    record Office(UUID id, String code, String name, UUID cityId, String cityName, String companyName,
+                  String countryCode, String currency, String consignmentNoteName) {
+    }
+
     record CancelRequest(@NotBlank @Size(max = 300) String reason) {
     }
 
@@ -135,6 +139,35 @@ class ConsignmentController {
                 .param("to", to)
                 .param("limit", Math.clamp(limit, 1, 500))
                 .query((rs, n) -> summary(rs))
+                .list();
+    }
+
+    /**
+     * Offices where consignments can be booked (booking-type offices, or all active
+     * offices when none is marked), with the company's country settings. Available to
+     * anyone who can view consignments, so clerks do not need the locations master.
+     */
+    @GetMapping("/offices")
+    List<Office> offices() {
+        TenantContext.requireTenantId();
+        return jdbc.sql("""
+                        SELECT l.id, l.code, l.name, l.city_id, ci.name AS city_name, c.legal_name, c.country_code, c.base_currency,
+                               cp.consignment_note_name
+                          FROM location l
+                          JOIN company c ON c.id = l.company_id
+                          JOIN country_pack cp ON cp.code = c.country_code
+                          LEFT JOIN city ci ON ci.id = l.city_id
+                         WHERE l.deleted_at IS NULL AND l.status = 'ACTIVE'
+                           AND (l.types && ARRAY['HEAD_OFFICE', 'BRANCH_OFFICE', 'BOOKING_OFFICE', 'FRANCHISE_AGENCY',
+                                                 'COLLECTION_POINT', 'IN_PLANT_OFFICE']::text[]
+                                OR NOT EXISTS (SELECT 1 FROM location x WHERE x.deleted_at IS NULL AND x.status = 'ACTIVE'
+                                               AND x.types && ARRAY['HEAD_OFFICE', 'BRANCH_OFFICE', 'BOOKING_OFFICE']::text[]))
+                         ORDER BY l.code
+                        """)
+                .query((rs, n) -> new Office(Rows.uuid(rs, "id"), rs.getString("code"), rs.getString("name"),
+                        Rows.uuid(rs, "city_id"), rs.getString("city_name"), rs.getString("legal_name"),
+                        rs.getString("country_code"),
+                        rs.getString("base_currency"), rs.getString("consignment_note_name")))
                 .list();
     }
 

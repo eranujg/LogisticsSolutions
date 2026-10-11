@@ -265,3 +265,156 @@ export interface RateQuote {
   total: number | null;
   transitDays: number | null;
 }
+
+export interface BookingOffice {
+  id: string;
+  code: string;
+  name: string;
+  cityId: string | null;
+  cityName: string | null;
+  companyName: string;
+  countryCode: string;
+  currency: string;
+  consignmentNoteName: string;
+}
+
+export interface ConsignmentSummary {
+  id: string;
+  cnNo: string;
+  cnDate: string;
+  status: string;
+  paymentType: string;
+  service: string;
+  bookingLocationId: string;
+  bookingLocationCode: string;
+  originCity: string;
+  destinationCity: string;
+  consignorName: string;
+  consigneeName: string;
+  billToName: string;
+  totalPackages: number;
+  chargeableWeightKg: number;
+  total: number;
+  currency: string;
+  createdAt: string;
+}
+
+export interface ConsignmentPackage {
+  id?: string;
+  packages: number;
+  packageType: string;
+  saidToContain: string;
+  hsnCode: string | null;
+  actualWeightKg: number | null;
+  volumeCft: number | null;
+  value: number | null;
+}
+
+export interface ConsignmentCharge {
+  chargeHeadId: string;
+  code: string;
+  name: string;
+  quotedAmount: number | null;
+  amount: number;
+  taxable: boolean;
+}
+
+export interface ConsignmentEvent {
+  status: string;
+  locationId: string | null;
+  note: string | null;
+  occurredAt: string;
+  userId: string | null;
+}
+
+export interface Consignment {
+  summary: ConsignmentSummary;
+  financialYear: string;
+  creation: string;
+  manualBookNo: string | null;
+  deliveryLocationId: string | null;
+  deliveryLocationCode: string | null;
+  originCityId: string;
+  destinationCityId: string;
+  movementType: string;
+  pickupType: string;
+  deliveryType: string;
+  vehicleType: string | null;
+  expectedDeliveryDate: string | null;
+  consignorId: string;
+  consignorTaxId: string | null;
+  consignorMobile: string | null;
+  consigneeId: string;
+  consigneeTaxId: string | null;
+  consigneeMobile: string | null;
+  billToId: string;
+  actualWeightKg: number;
+  volumeCft: number;
+  declaredValue: number;
+  invoiceNumbers: string[];
+  ewayBillNo: string | null;
+  ewayBillValidUntil: string | null;
+  risk: string;
+  privateMarks: string | null;
+  instructions: string | null;
+  rateSource: string;
+  rateCardId: string | null;
+  rateBasis: string | null;
+  rate: number | null;
+  quotedFreight: number | null;
+  freight: number;
+  chargesTotal: number;
+  discount: number;
+  taxableAmount: number;
+  taxPaidBy: string;
+  taxRate: number;
+  taxAmount: number;
+  overrideReason: string | null;
+  approvedBy: string | null;
+  cancelReason: string | null;
+  cancelledAt: string | null;
+  cancelledBy: string | null;
+  packages: ConsignmentPackage[];
+  charges: ConsignmentCharge[];
+  events: ConsignmentEvent[];
+}
+
+export interface PricedCharge {
+  chargeHeadId: string;
+  code: string;
+  name: string;
+  quotedAmount: number | null;
+  amount: number;
+  editControl: string;
+  taxable: boolean;
+}
+
+export interface ConsignmentPricing {
+  rateSource: string;
+  rateCardId: string | null;
+  rateCardCode: string | null;
+  rateCardLineId: string | null;
+  rateBasis: string | null;
+  rate: number | null;
+  rateMessage: string | null;
+  totalPackages: number;
+  actualWeightKg: number;
+  volumeCft: number;
+  chargeableWeightKg: number;
+  declaredValue: number;
+  quotedFreight: number | null;
+  freight: number;
+  charges: PricedCharge[];
+  chargesTotal: number;
+  discount: number;
+  taxableAmount: number;
+  taxPaidBy: string;
+  taxRate: number;
+  taxAmount: number;
+  total: number;
+  currency: string;
+  transitDays: number | null;
+  needsApproval: boolean;
+  approvalReasons: string[];
+  warnings: string[];
+}

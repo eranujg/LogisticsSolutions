@@ -358,7 +358,30 @@ input.upper {
 
 /* Compact form fields inside editable tables (rate lanes, charges) */
 table.lines .mat-mdc-form-field-infix,
-table.charges .mat-mdc-form-field-infix {
+table.charges .mat-mdc-form-field-infix,
+table.goods .mat-mdc-form-field-infix,
+.amount .mat-mdc-form-field-infix {
   width: auto;
   min-width: 0;
+}
+
+.date-field {
+  width: 10.5rem;
+}
+
+@media print {
+  .rail,
+  .no-print {
+    display: none !important;
+  }
+
+  body,
+  .content {
+    background: #fff !important;
+    padding: 0 !important;
+  }
+
+  .shell {
+    display: block !important;
+  }
 }

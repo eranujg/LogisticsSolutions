@@ -11,7 +11,8 @@ export function humanize(code: string | null | undefined): string {
     ACN: 'ACN', TFN: 'TFN', USDOT: 'USDOT', MC: 'MC', UCR: 'UCR', IFTA: 'IFTA', CVOR: 'CVOR', NSC: 'NSC',
     CIN: 'CIN', GR: 'GR', POD: 'POD', FTL: 'FTL (full load)', PTL: 'PTL (part load)', ODC: 'ODC (over-dimensional)',
     PER_KG: 'Per kg', PER_KM: 'Per km', PERCENT_OF_VALUE: '% of goods value', PERCENT_OF_FREIGHT: '% of freight',
-    RATE_CARD: 'From rate card', CLIENT_CARD: 'Client rate card', STANDARD: 'Standard rates', UDYAM: 'Udyam', NHVAS: 'NHVAS', CBSA_CARRIER_CODE: 'CBSA carrier code'
+    RATE_CARD: 'From rate card', FOC: 'Free of charge', RCM: 'Reverse charge (recipient)', TRANSPORTER: 'Transporter (forward charge)',
+    OUT_FOR_DELIVERY: 'Out for delivery', IN_TRANSIT: 'In transit', CLIENT_CARD: 'Client rate card', STANDARD: 'Standard rates', UDYAM: 'Udyam', NHVAS: 'NHVAS', CBSA_CARRIER_CODE: 'CBSA carrier code'
   };
   if (special[code]) {
     return special[code];
@@ -55,3 +56,15 @@ export const RATE_BASES = ['PER_KG', 'PER_TONNE', 'PER_PACKAGE', 'PER_TRIP', 'PE
 export const CHARGE_METHODS = ['FIXED', 'PER_PACKAGE', 'PER_KG', 'PERCENT_OF_FREIGHT', 'PERCENT_OF_VALUE'] as const;
 export const EDIT_CONTROLS = ['FREE', 'INCREASE_ONLY', 'LOCKED'] as const;
 export const RATE_CARD_STATUSES = ['DRAFT', 'ACTIVE', 'SUSPENDED', 'SUPERSEDED'] as const;
+export const CN_PAYMENT_TYPES = ['PAID', 'TO_PAY', 'TBB', 'FOC'] as const;
+export const MOVEMENT_TYPES = ['DIRECT', 'TRANSIT', 'CROSSING', 'LOCAL'] as const;
+export const PICKUP_TYPES = ['GODOWN', 'DOOR'] as const;
+export const TAX_PAID_BY = ['RCM', 'TRANSPORTER', 'EXEMPT'] as const;
+export const PACKAGE_TYPES = ['CARTON', 'BOX', 'BAG', 'BUNDLE', 'DRUM', 'ROLL', 'PALLET', 'CRATE', 'LOOSE', 'OTHER'] as const;
+export const CN_STATUSES = [
+  'BOOKED', 'LOADED', 'IN_TRANSIT', 'ARRIVED', 'OUT_FOR_DELIVERY', 'DELIVERED', 'UNDELIVERED', 'RETURNED', 'CANCELLED'
+] as const;
+
+export function cnStatusTag(status: string): string {
+  return ({ BOOKED: 'info', DELIVERED: 'ok', CANCELLED: 'danger', UNDELIVERED: 'warn', RETURNED: 'warn' } as Record<string, string>)[status] ?? '';
+}

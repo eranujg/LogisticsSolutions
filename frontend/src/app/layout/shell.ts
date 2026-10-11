@@ -8,6 +8,8 @@ interface NavItem {
   path: string;
   icon: string;
   permission: string | null;
+  /** Highlight only on this exact path (e.g. the register, not its child pages). */
+  exact?: boolean;
 }
 
 interface NavGroup {
@@ -20,6 +22,8 @@ const NAV: NavGroup[] = [
     label: 'Daily work',
     items: [
       { label: 'Overview', path: '/', icon: 'home', permission: null },
+      { label: 'Book GR', path: '/consignments/new', icon: 'add_box', permission: 'gr.create' },
+      { label: 'GR register', path: '/consignments', icon: 'local_shipping', permission: 'gr.view', exact: true },
       { label: 'Rate calculator', path: '/rate-calculator', icon: 'calculate', permission: 'rate_card.view' }
     ]
   },
