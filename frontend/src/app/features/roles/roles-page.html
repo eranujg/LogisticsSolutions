@@ -1,0 +1,91 @@
+<header class="page-head">
+  <div>
+    <h1>Roles and permissions</h1>
+    <p>What each role can see and do. Built-in roles are templates: copy one to change it.</p>
+  </div>
+</header>
+
+<div class="layout">
+  <ul class="role-list panel" aria-label="Roles">
+    @for (role of roles(); track role.id) {
+      <li>
+        <button type="button" [class.active]="role.id === selectedId()" (click)="select(role.id)" [attr.aria-current]="role.id === selectedId()">
+          <span>{{ role.name }}</span>
+          @if (role.system) { <small>Built-in</small> }
+        </button>
+      </li>
+    }
+  </ul>
+
+  @if (selected(); as role) {
+    <section class="panel matrix">
+      <div class="matrix-head">
+        <div>
+          <h2>{{ role.name }}</h2>
+          @if (role.description) { <p class="muted">{{ role.description }}</p> }
+        </div>
+        <div class="toolbar">
+          @if (session.can('role.create')) {
+            <button mat-stroked-button (click)="openCopy()"><mat-icon>content_copy</mat-icon>Copy role</button>
+          }
+          @if (editable()) {
+            <button mat-flat-button [disabled]="!dirty() || saving()" (click)="save()">Save changes</button>
+          }
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <caption class="sr-only">Permissions for {{ role.name }}</caption>
+          <thead>
+            <tr>
+              <th scope="col">Area</th>
+              @for (action of actions; track action) { <th scope="col">{{ humanize(action) }}</th> }
+            </tr>
+          </thead>
+          <tbody>
+            @for (row of modules(); track row.module) {
+              <tr>
+                <th scope="row">
+                  {{ humanize(row.module) }}
+                  @if (row.sensitive) { <span class="sensitive" title="Sensitive: money, people or security">Sensitive</span> }
+                </th>
+                @for (action of actions; track action) {
+                  <td>
+                    @if (editable()) {
+                      <mat-checkbox [checked]="has(row.module, action)" (change)="toggle(row.module, action, $event.checked)"
+                                    [aria-label]="humanize(action) + ' ' + humanize(row.module)" />
+                    } @else if (has(row.module, action)) {
+                      <span class="material-symbols-outlined yes" aria-label="Allowed">check</span>
+                    } @else {
+                      <span class="no" aria-label="Not allowed">–</span>
+                    }
+                  </td>
+                }
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </section>
+  }
+</div>
+
+<ng-template #copier>
+  <h2 mat-dialog-title>Copy role</h2>
+  <mat-dialog-content>
+    <mat-form-field class="full">
+      <mat-label>Name</mat-label>
+      <input matInput [ngModel]="copyName()" (ngModelChange)="copyName.set($event)" />
+    </mat-form-field>
+    <mat-form-field class="full">
+      <mat-label>Code</mat-label>
+      <input matInput [ngModel]="copyCode()" (ngModelChange)="copyCode.set($event)" class="upper" />
+      <mat-hint>Letters, digits and underscores.</mat-hint>
+    </mat-form-field>
+  </mat-dialog-content>
+  <mat-dialog-actions align="end">
+    <button mat-button type="button" (click)="closeCopy()">Cancel</button>
+    <button mat-flat-button [disabled]="!copyName().trim() || !copyCode().trim()" (click)="copy()">Copy role</button>
+  </mat-dialog-actions>
+</ng-template>

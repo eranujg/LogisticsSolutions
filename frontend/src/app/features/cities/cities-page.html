@@ -1,0 +1,102 @@
+<header class="page-head">
+  <div>
+    <h1>Cities</h1>
+    <p>Places you book from and deliver to. Add towns and villages that are not in the shared list.</p>
+  </div>
+  @if (session.can('city.create')) {
+    <button mat-flat-button (click)="openNew()"><mat-icon>add</mat-icon>Add city</button>
+  }
+</header>
+
+<div class="toolbar">
+  <mat-form-field class="search-field">
+    <mat-icon matPrefix>search</mat-icon>
+    <mat-label>Search by name, old name or PIN code</mat-label>
+    <input matInput type="search" [value]="query()" (input)="onSearch($any($event.target).value)" />
+  </mat-form-field>
+</div>
+
+<div class="panel">
+  @if (loading()) { <mat-progress-bar mode="indeterminate" class="loading-bar" /> }
+  <table mat-table [dataSource]="cities()" class="data-table">
+    <ng-container matColumnDef="name">
+      <th mat-header-cell *matHeaderCellDef>City</th>
+      <td mat-cell *matCellDef="let city">{{ city.name }}</td>
+    </ng-container>
+    <ng-container matColumnDef="state">
+      <th mat-header-cell *matHeaderCellDef>State</th>
+      <td mat-cell *matCellDef="let city">{{ city.stateCode }}, {{ city.countryCode }}</td>
+    </ng-container>
+    <ng-container matColumnDef="aliases">
+      <th mat-header-cell *matHeaderCellDef>Also known as</th>
+      <td mat-cell *matCellDef="let city" class="muted">{{ city.aliases.join(', ') }}</td>
+    </ng-container>
+    <ng-container matColumnDef="classification">
+      <th mat-header-cell *matHeaderCellDef>Class</th>
+      <td mat-cell *matCellDef="let city">{{ humanize(city.classification) }}</td>
+    </ng-container>
+    <ng-container matColumnDef="source">
+      <th mat-header-cell *matHeaderCellDef>Source</th>
+      <td mat-cell *matCellDef="let city">
+        @if (city.global) { <span class="muted">Shared list</span> } @else { <span class="tag info">Added by you</span> }
+      </td>
+    </ng-container>
+    <tr mat-header-row *matHeaderRowDef="columns"></tr>
+    <tr mat-row *matRowDef="let row; columns: columns"></tr>
+    <tr class="mat-mdc-row" *matNoDataRow>
+      <td class="empty" [attr.colspan]="columns.length">{{ loading() ? 'Loading…' : 'No city matches “' + query() + '”. Add it if you serve it.' }}</td>
+    </tr>
+  </table>
+</div>
+
+<ng-template #editor>
+  <h2 mat-dialog-title>Add city</h2>
+  <mat-dialog-content>
+    <form [formGroup]="form" (ngSubmit)="save()" id="city-form" class="form-grid">
+      <mat-form-field>
+        <mat-label>Country</mat-label>
+        <mat-select formControlName="countryCode" (selectionChange)="loadRegions($event.value)">
+          @for (pack of packs(); track pack.code) { <mat-option [value]="pack.code">{{ pack.name }}</mat-option> }
+        </mat-select>
+      </mat-form-field>
+      <mat-form-field>
+        <mat-label>State or province</mat-label>
+        <mat-select formControlName="stateCode">
+          @for (region of regions(); track region.code) { <mat-option [value]="region.code">{{ region.name }}</mat-option> }
+        </mat-select>
+        <mat-error>Choose a state.</mat-error>
+      </mat-form-field>
+      <mat-form-field>
+        <mat-label>Name</mat-label>
+        <input matInput formControlName="name" />
+        <mat-error>Enter the city name.</mat-error>
+      </mat-form-field>
+      <mat-form-field>
+        <mat-label>District</mat-label>
+        <input matInput formControlName="district" />
+      </mat-form-field>
+      <mat-form-field class="wide">
+        <mat-label>Other names</mat-label>
+        <input matInput formControlName="aliases" />
+        <mat-hint>Separate with commas, for example an old name.</mat-hint>
+      </mat-form-field>
+      <mat-form-field>
+        <mat-label>Class</mat-label>
+        <mat-select formControlName="classification">
+          <mat-option [value]="null">Not set</mat-option>
+          @for (option of classOptions; track option.value) { <mat-option [value]="option.value">{{ option.label }}</mat-option> }
+        </mat-select>
+      </mat-form-field>
+      <mat-form-field>
+        <mat-label>PIN or postal codes</mat-label>
+        <input matInput formControlName="postalCodes" />
+        <mat-hint>Separate with commas.</mat-hint>
+      </mat-form-field>
+    </form>
+    @if (formError()) { <p class="form-error" role="alert">{{ formError() }}</p> }
+  </mat-dialog-content>
+  <mat-dialog-actions align="end">
+    <button mat-button type="button" (click)="closeEditor()">Cancel</button>
+    <button mat-flat-button type="submit" form="city-form" [disabled]="saving()">Add city</button>
+  </mat-dialog-actions>
+</ng-template>

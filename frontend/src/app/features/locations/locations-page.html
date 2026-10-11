@@ -1,0 +1,147 @@
+<header class="page-head">
+  <div>
+    <h1>Offices and locations</h1>
+    <p>Head office, branches, booking and delivery offices, godowns, yards and workshops.</p>
+  </div>
+  @if (session.can('location.create')) {
+    <button mat-flat-button (click)="openNew()" [disabled]="!companies().length"><mat-icon>add</mat-icon>Add location</button>
+  }
+</header>
+
+@if (!loading() && !companies().length) {
+  <p class="form-error">Save your company details first. Every location belongs to a company.</p>
+}
+
+<div class="panel">
+  @if (loading()) { <mat-progress-bar mode="indeterminate" class="loading-bar" /> }
+  <table mat-table [dataSource]="locations()" class="data-table">
+    <ng-container matColumnDef="code">
+      <th mat-header-cell *matHeaderCellDef>Code</th>
+      <td mat-cell *matCellDef="let location" class="code">{{ location.code }}</td>
+    </ng-container>
+    <ng-container matColumnDef="name">
+      <th mat-header-cell *matHeaderCellDef>Name</th>
+      <td mat-cell *matCellDef="let location">
+        {{ location.name }}
+        @if (location.status !== 'ACTIVE') { <span class="tag warn">{{ humanize(location.status) }}</span> }
+      </td>
+    </ng-container>
+    <ng-container matColumnDef="types">
+      <th mat-header-cell *matHeaderCellDef>Used as</th>
+      <td mat-cell *matCellDef="let location"><div class="chips">@for (type of location.types; track type) { <span class="tag">{{ humanize(type) }}</span> }</div></td>
+    </ng-container>
+    <ng-container matColumnDef="city">
+      <th mat-header-cell *matHeaderCellDef>City</th>
+      <td mat-cell *matCellDef="let location">{{ cityName()(location.cityId) }}</td>
+    </ng-container>
+    <ng-container matColumnDef="manager">
+      <th mat-header-cell *matHeaderCellDef>Manager</th>
+      <td mat-cell *matCellDef="let location">{{ location.managerName }} @if (location.phone) { <div class="muted">{{ location.phone }}</div> }</td>
+    </ng-container>
+    <ng-container matColumnDef="actions">
+      <th mat-header-cell *matHeaderCellDef class="actions"><span class="sr-only">Actions</span></th>
+      <td mat-cell *matCellDef="let location" class="actions">
+        @if (session.can('location.edit')) {
+          <button mat-icon-button (click)="openEdit(location)" [attr.aria-label]="'Edit ' + location.name" matTooltip="Edit"><mat-icon>edit</mat-icon></button>
+        }
+        @if (session.can('location.delete')) {
+          <button mat-icon-button class="icon-button-danger" (click)="askDelete(location)" [attr.aria-label]="'Delete ' + location.name" matTooltip="Delete"><mat-icon>delete</mat-icon></button>
+        }
+      </td>
+    </ng-container>
+    <tr mat-header-row *matHeaderRowDef="columns"></tr>
+    <tr mat-row *matRowDef="let row; columns: columns"></tr>
+    <tr class="mat-mdc-row" *matNoDataRow>
+      <td class="empty" [attr.colspan]="columns.length">{{ loading() ? 'Loading…' : 'No locations yet. Start with your head office.' }}</td>
+    </tr>
+  </table>
+</div>
+
+<ng-template #editor>
+  <h2 mat-dialog-title>{{ editing() ? 'Edit ' + editing()!.code : 'Add location' }}</h2>
+  <mat-dialog-content>
+    <form [formGroup]="form" (ngSubmit)="save()" id="location-form" class="form-grid">
+      <mat-form-field>
+        <mat-label>Code</mat-label>
+        <input matInput formControlName="code" class="upper" placeholder="LDH" />
+        <mat-error>Letters, digits, - or _ (up to 20).</mat-error>
+      </mat-form-field>
+      <mat-form-field>
+        <mat-label>Name</mat-label>
+        <input matInput formControlName="name" placeholder="Ludhiana head office" />
+        <mat-error>Enter a name.</mat-error>
+      </mat-form-field>
+      <mat-form-field class="wide">
+        <mat-label>Used as</mat-label>
+        <mat-select formControlName="types" multiple>
+          @for (option of typeOptions; track option.value) { <mat-option [value]="option.value">{{ option.label }}</mat-option> }
+        </mat-select>
+        <mat-hint>Booking offices can create GRs; delivery offices can close them.</mat-hint>
+        <mat-error>Choose at least one.</mat-error>
+      </mat-form-field>
+      @if (companies().length > 1) {
+        <mat-form-field>
+          <mat-label>Company</mat-label>
+          <mat-select formControlName="companyId">
+            @for (company of companies(); track company.id) { <mat-option [value]="company.id">{{ company.legalName }}</mat-option> }
+          </mat-select>
+        </mat-form-field>
+      }
+      <mat-form-field>
+        <mat-label>Reports to</mat-label>
+        <mat-select formControlName="parentId">
+          <mat-option [value]="null">None</mat-option>
+          @for (option of parentOptions(); track option.value) { <mat-option [value]="option.value">{{ option.label }}</mat-option> }
+        </mat-select>
+      </mat-form-field>
+      <mat-form-field>
+        <mat-label>Status</mat-label>
+        <mat-select formControlName="status">
+          @for (option of statusOptions; track option.value) { <mat-option [value]="option.value">{{ option.label }}</mat-option> }
+        </mat-select>
+      </mat-form-field>
+      <mat-form-field>
+        <mat-label>Premises</mat-label>
+        <mat-select formControlName="tenure">
+          <mat-option [value]="null">Not set</mat-option>
+          @for (option of tenureOptions; track option.value) { <mat-option [value]="option.value">{{ option.label }}</mat-option> }
+        </mat-select>
+      </mat-form-field>
+      <mat-form-field class="wide">
+        <mat-label>Address</mat-label>
+        <input matInput formControlName="addressLine1" />
+      </mat-form-field>
+      <mat-form-field>
+        <mat-label>City</mat-label>
+        <input matInput [formControl]="cityQuery" [matAutocomplete]="cityAuto" placeholder="Type to search" />
+        <mat-autocomplete #cityAuto="matAutocomplete" [displayWith]="cityLabel" (optionSelected)="pickCity($event)">
+          @for (city of citySuggestions(); track city.id) {
+            <mat-option [value]="city">{{ city.name }}, {{ city.stateCode }}</mat-option>
+          }
+        </mat-autocomplete>
+      </mat-form-field>
+      <mat-form-field>
+        <mat-label>Postal code</mat-label>
+        <input matInput formControlName="postalCode" />
+      </mat-form-field>
+      <mat-form-field>
+        <mat-label>Manager</mat-label>
+        <input matInput formControlName="managerName" />
+      </mat-form-field>
+      <mat-form-field>
+        <mat-label>Phone</mat-label>
+        <input matInput formControlName="phone" inputmode="tel" />
+      </mat-form-field>
+      <mat-form-field>
+        <mat-label>Email</mat-label>
+        <input matInput type="email" formControlName="email" />
+        <mat-error>Enter a valid email.</mat-error>
+      </mat-form-field>
+    </form>
+    @if (formError()) { <p class="form-error" role="alert">{{ formError() }}</p> }
+  </mat-dialog-content>
+  <mat-dialog-actions align="end">
+    <button mat-button type="button" (click)="closeEditor()">Cancel</button>
+    <button mat-flat-button type="submit" form="location-form" [disabled]="saving()">{{ editing() ? 'Save changes' : 'Add location' }}</button>
+  </mat-dialog-actions>
+</ng-template>

@@ -1,0 +1,110 @@
+<header class="page-head">
+  <div>
+    <h1>Users</h1>
+    <p>Staff and partners who sign in. Each user signs in with their own email and gets only their roles' permissions.</p>
+  </div>
+  @if (session.can('user.create')) {
+    <button mat-flat-button (click)="openNew()"><mat-icon>person_add</mat-icon>Add user</button>
+  }
+</header>
+
+<div class="panel">
+  @if (loading()) { <mat-progress-bar mode="indeterminate" class="loading-bar" /> }
+  <table mat-table [dataSource]="users()" class="data-table">
+    <ng-container matColumnDef="name">
+      <th mat-header-cell *matHeaderCellDef>Name</th>
+      <td mat-cell *matCellDef="let user">{{ user.fullName }} <div class="muted">{{ humanize(user.userType) }}</div></td>
+    </ng-container>
+    <ng-container matColumnDef="email">
+      <th mat-header-cell *matHeaderCellDef>Sign-in email</th>
+      <td mat-cell *matCellDef="let user">{{ user.email }} @if (user.mobile) { <div class="muted">{{ user.mobile }}</div> }</td>
+    </ng-container>
+    <ng-container matColumnDef="roles">
+      <th mat-header-cell *matHeaderCellDef>Roles</th>
+      <td mat-cell *matCellDef="let user"><div class="chips">@for (id of user.roleIds; track id) { <span class="tag">{{ roleName()(id) }}</span> }</div></td>
+    </ng-container>
+    <ng-container matColumnDef="status">
+      <th mat-header-cell *matHeaderCellDef>Status</th>
+      <td mat-cell *matCellDef="let user"><span class="tag" [class]="statusClass(user.status)">{{ humanize(user.status) }}</span></td>
+    </ng-container>
+    <ng-container matColumnDef="lastLogin">
+      <th mat-header-cell *matHeaderCellDef>Last sign-in</th>
+      <td mat-cell *matCellDef="let user" class="muted">{{ user.lastLoginAt ? (user.lastLoginAt | date: 'd MMM y, HH:mm') : 'Never' }}</td>
+    </ng-container>
+    <ng-container matColumnDef="actions">
+      <th mat-header-cell *matHeaderCellDef class="actions"><span class="sr-only">Actions</span></th>
+      <td mat-cell *matCellDef="let user" class="actions">
+        @if (session.can('user.edit')) {
+          <button mat-icon-button (click)="openEdit(user)" [attr.aria-label]="'Edit ' + user.fullName" matTooltip="Edit"><mat-icon>edit</mat-icon></button>
+        }
+        @if (session.can('user.delete') && user.id !== session.me()?.userId) {
+          <button mat-icon-button class="icon-button-danger" (click)="askDelete(user)" [attr.aria-label]="'Deactivate ' + user.fullName" matTooltip="Deactivate"><mat-icon>person_off</mat-icon></button>
+        }
+      </td>
+    </ng-container>
+    <tr mat-header-row *matHeaderRowDef="columns"></tr>
+    <tr mat-row *matRowDef="let row; columns: columns"></tr>
+    <tr class="mat-mdc-row" *matNoDataRow>
+      <td class="empty" [attr.colspan]="columns.length">{{ loading() ? 'Loading…' : 'No users yet.' }}</td>
+    </tr>
+  </table>
+</div>
+
+<ng-template #editor>
+  <h2 mat-dialog-title>{{ editing() ? 'Edit ' + editing()!.fullName : 'Add user' }}</h2>
+  <mat-dialog-content>
+    <form [formGroup]="form" (ngSubmit)="save()" id="user-form" class="form-grid">
+      <mat-form-field>
+        <mat-label>Full name</mat-label>
+        <input matInput formControlName="fullName" />
+        <mat-error>Enter the person's name.</mat-error>
+      </mat-form-field>
+      <mat-form-field>
+        <mat-label>Type</mat-label>
+        <mat-select formControlName="userType">
+          @for (option of typeOptions; track option.value) { <mat-option [value]="option.value">{{ option.label }}</mat-option> }
+        </mat-select>
+      </mat-form-field>
+      <mat-form-field>
+        <mat-label>Sign-in email</mat-label>
+        <input matInput type="email" formControlName="email" />
+        <mat-hint>Must match their login account.</mat-hint>
+        <mat-error>Enter a valid email.</mat-error>
+      </mat-form-field>
+      <mat-form-field>
+        <mat-label>Mobile</mat-label>
+        <input matInput formControlName="mobile" inputmode="tel" />
+        <mat-error>Use 7 to 15 digits, with optional + country code.</mat-error>
+      </mat-form-field>
+      <mat-form-field class="wide">
+        <mat-label>Roles</mat-label>
+        <mat-select formControlName="roleIds" multiple placeholder="No access">
+          @for (role of roles(); track role.id) { <mat-option [value]="role.id">{{ role.name }}</mat-option> }
+        </mat-select>
+      </mat-form-field>
+      <mat-form-field class="wide">
+        <mat-label>Works at</mat-label>
+        <mat-select formControlName="locationIds" multiple placeholder="All locations">
+          @for (option of locationOptions(); track option.value) { <mat-option [value]="option.value">{{ option.label }}</mat-option> }
+        </mat-select>
+      </mat-form-field>
+      <mat-form-field>
+        <mat-label>Status</mat-label>
+        <mat-select formControlName="status">
+          @for (option of statusOptions; track option.value) { <mat-option [value]="option.value">{{ option.label }}</mat-option> }
+        </mat-select>
+      </mat-form-field>
+      <mat-form-field>
+        <mat-label>Language</mat-label>
+        <mat-select formControlName="preferredLanguage">
+          @for (option of languageOptions; track option.value) { <mat-option [value]="option.value">{{ option.label }}</mat-option> }
+        </mat-select>
+      </mat-form-field>
+    </form>
+    @if (formError()) { <p class="form-error" role="alert">{{ formError() }}</p> }
+  </mat-dialog-content>
+  <mat-dialog-actions align="end">
+    <button mat-button type="button" (click)="closeEditor()">Cancel</button>
+    <button mat-flat-button type="submit" form="user-form" [disabled]="saving()">{{ editing() ? 'Save changes' : 'Add user' }}</button>
+  </mat-dialog-actions>
+</ng-template>

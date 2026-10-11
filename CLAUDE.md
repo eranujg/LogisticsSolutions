@@ -36,6 +36,21 @@ npm test       # ng test (vitest)
 
 Health check: `GET /api/v1/system/info` returns app name, database time and tenant count.
 
+## Frontend structure
+
+- UI library: **Angular Material** (MIT). Do not add PrimeNG/PrimeIcons: since v22 they need a paid
+  licence key. Icons: `material-symbols` (Apache-2.0). Font: self-hosted `@fontsource/instrument-sans`.
+- Sign-in: `core/auth` uses `oidc-client-ts` (authorization code + PKCE) against Keycloak
+  (`core/config.ts`); tokens in session storage. `authInterceptor` adds the bearer token to `/api/v1`
+  calls and redirects to sign-in on 401.
+- `core/session/SessionService` loads `GET /api/v1/me`; use `session.can('party.create')` to show or
+  hide actions and `permissionGuard('party.view')` on routes. The backend still enforces everything.
+- `core/api/ApiService` + `models.ts` mirror the backend records. Screens live in `features/<area>`,
+  lazy-loaded from `app.routes.ts`, menu in `layout/shell.ts` (`NAV`, filtered by permission).
+- Edit forms open as MatDialog templates; deletes go through `DeleteDialog.ask(...)` (asks for a reason).
+  Messages via `NotifyService`. Shared page styles (`page-head`, `panel`, `form-grid`, `tag`) are in
+  `src/styles.scss`.
+
 ## Backend structure
 
 Top-level packages under `com.aadvixon.tms` are modules: `platform` (tenancy, audit, recycle bin, numbering,
