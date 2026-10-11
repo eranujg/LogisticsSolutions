@@ -12,7 +12,9 @@ enum RecycleBin {
     CITY_SERVICE("city_service", "id::text"),
     APP_USER("app_user", "full_name"),
     ROLE("role", "name"),
-    PARTY("party", "code || ' - ' || legal_name");
+    PARTY("party", "code || ' - ' || legal_name"),
+    RATE_CARD("rate_card", "code || ' v' || version || ' - ' || name"),
+    CHARGE_HEAD("charge_head", "code || ' - ' || name");
 
     private static final Map<String, RecycleBin> BY_PATH = Map.of(
             "companies", COMPANY,
@@ -20,7 +22,9 @@ enum RecycleBin {
             "city-services", CITY_SERVICE,
             "users", APP_USER,
             "roles", ROLE,
-            "parties", PARTY);
+            "parties", PARTY,
+            "rate-cards", RATE_CARD,
+            "charge-heads", CHARGE_HEAD);
 
     final String table;
     final String labelExpression;

@@ -8,7 +8,7 @@ import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionTemplate;
 
-/** Creates a tenant and its default roles in one transaction. */
+/** Creates a tenant, its default roles and charge heads in one transaction. */
 @Service
 public class TenantProvisioningService {
 
@@ -40,6 +40,7 @@ public class TenantProvisioningService {
                     .param("name", name)
                     .update();
             jdbc.sql("SELECT provision_tenant_defaults()").query().singleValue();
+            jdbc.sql("SELECT provision_charge_heads()").query().singleValue();
             if (ownerEmail != null && !ownerEmail.isBlank()) {
                 UUID ownerId = jdbc.sql("INSERT INTO app_user (tenant_id, user_type, full_name, email, status, created_by)"
                                 + " VALUES (:tenant, 'STAFF', :name, CAST(:email AS citext), 'INVITED', 'system') RETURNING id")
