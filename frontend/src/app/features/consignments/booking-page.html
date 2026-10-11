@@ -1,0 +1,311 @@
+<header class="page-head">
+  <div>
+    <a routerLink="/consignments" class="back-link"><mat-icon>arrow_back</mat-icon>GR register</a>
+    <h1>{{ editing() ? 'Edit ' + noteName() + ' ' + editing()!.summary.cnNo : 'Book ' + noteName() }}</h1>
+    <p>Freight and charges come from the rate cards as you type. Changes below the rate need approval.</p>
+  </div>
+</header>
+
+@if (loading()) { <mat-progress-bar mode="indeterminate" class="loading-bar" /> }
+
+@if (!loading()) {
+  @if (!offices().length) {
+    <p class="notice">No booking office is set up yet. Add an office under <a routerLink="/locations">Offices and locations</a> first.</p>
+  }
+  <div class="booking">
+    <div class="main">
+      <section class="panel">
+        <h2 class="section-title">Booking</h2>
+        <div class="panel-body form-grid">
+          <mat-form-field>
+            <mat-label>Booking office</mat-label>
+            <mat-select [ngModel]="f.bookingLocationId" (ngModelChange)="pickOffice($event)" [disabled]="!!editing()">
+              @for (o of offices(); track o.id) { <mat-option [value]="o.id">{{ o.code }} · {{ o.name }}</mat-option> }
+            </mat-select>
+          </mat-form-field>
+          <mat-form-field>
+            <mat-label>Date</mat-label>
+            <input matInput type="date" [(ngModel)]="f.cnDate" (ngModelChange)="changed()" />
+          </mat-form-field>
+          <mat-form-field>
+            <mat-label>Payment</mat-label>
+            <mat-select [(ngModel)]="f.paymentType" (ngModelChange)="changed()">
+              @for (o of paymentOptions; track o.value) { <mat-option [value]="o.value">{{ o.label }}</mat-option> }
+            </mat-select>
+          </mat-form-field>
+          <mat-form-field>
+            <mat-label>Service</mat-label>
+            <mat-select [(ngModel)]="f.service" (ngModelChange)="changed()">
+              @for (o of serviceOptions; track o.value) { <mat-option [value]="o.value">{{ o.label }}</mat-option> }
+            </mat-select>
+          </mat-form-field>
+          <mat-form-field>
+            <mat-label>Movement</mat-label>
+            <mat-select [(ngModel)]="f.movementType">
+              @for (o of movementOptions; track o.value) { <mat-option [value]="o.value">{{ o.label }}</mat-option> }
+            </mat-select>
+          </mat-form-field>
+          @if (!editing()) {
+            <mat-form-field>
+              <mat-label>Manual {{ noteName() }} no</mat-label>
+              <input matInput [(ngModel)]="f.manualNo" class="upper" placeholder="Empty = next number" />
+              <mat-hint>Only for pre-printed books</mat-hint>
+            </mat-form-field>
+            @if (f.manualNo) {
+              <mat-form-field>
+                <mat-label>Book no</mat-label>
+                <input matInput [(ngModel)]="f.manualBookNo" />
+              </mat-form-field>
+            }
+          }
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2 class="section-title">Parties and route</h2>
+        <div class="panel-body form-grid">
+          <tms-party-picker label="Consignor (sender)" [(partyId)]="f.consignorId" [(partyName)]="f.consignorName"
+                            (partyIdChange)="changed()" />
+          <tms-party-picker label="Consignee (receiver)" [(partyId)]="f.consigneeId" [(partyName)]="f.consigneeName"
+                            (partyIdChange)="changed()" />
+          <tms-party-picker label="Bill to (optional)" placeholder="Default: consignor, or consignee for to-pay"
+                            [hint]="f.paymentType === 'TBB' ? 'The party you will invoice' : ''"
+                            [(partyId)]="f.billToId" [(partyName)]="f.billToName" (partyIdChange)="changed()" />
+          <tms-city-picker label="From city" placeholder="Search city" [(cityId)]="f.originCityId"
+                           [(cityName)]="f.originCityName" (cityIdChange)="changed()" />
+          <tms-city-picker label="To city" placeholder="Search city" [(cityId)]="f.destinationCityId"
+                           [(cityName)]="f.destinationCityName" (cityIdChange)="changed()" />
+          <mat-form-field>
+            <mat-label>Delivery office</mat-label>
+            <mat-select [(ngModel)]="f.deliveryLocationId" (ngModelChange)="changed()">
+              <mat-option [value]="null">Not set</mat-option>
+              @for (o of offices(); track o.id) { <mat-option [value]="o.id">{{ o.code }} · {{ o.name }}</mat-option> }
+            </mat-select>
+          </mat-form-field>
+          <mat-form-field>
+            <mat-label>Pickup</mat-label>
+            <mat-select [(ngModel)]="f.pickupType">
+              @for (o of pickupOptions; track o.value) { <mat-option [value]="o.value">{{ o.label }}</mat-option> }
+            </mat-select>
+          </mat-form-field>
+          <mat-form-field>
+            <mat-label>Delivery</mat-label>
+            <mat-select [(ngModel)]="f.deliveryType">
+              @for (o of pickupOptions; track o.value) { <mat-option [value]="o.value">{{ o.label }}</mat-option> }
+            </mat-select>
+          </mat-form-field>
+          @if (f.service === 'FTL' || f.service === 'CONTAINER' || f.service === 'ODC') {
+            <mat-form-field>
+              <mat-label>Vehicle type</mat-label>
+              <input matInput [(ngModel)]="f.vehicleType" (ngModelChange)="changed()" placeholder="For example: 32 ft MXL" />
+            </mat-form-field>
+          }
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2 class="section-title">
+          Goods
+          <button mat-stroked-button (click)="addRow()"><mat-icon>add</mat-icon>Add line</button>
+        </h2>
+        <div class="goods-scroll">
+          <table class="goods">
+            <thead>
+              <tr>
+                <th class="num">Pkgs</th><th>Type</th><th>Said to contain</th><th>HSN</th>
+                <th class="num">Weight kg</th><th class="num">CFT</th><th class="num">Value</th><th><span class="sr-only">Remove</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (row of rows(); track row.key; let i = $index) {
+                <tr>
+                  <td><mat-form-field subscriptSizing="dynamic" class="cell n"><input matInput type="number" min="1" [(ngModel)]="row.packages" (ngModelChange)="rowsChanged()" [attr.aria-label]="'Packages, line ' + (i + 1)" /></mat-form-field></td>
+                  <td>
+                    <mat-form-field subscriptSizing="dynamic" class="cell t">
+                      <mat-select [(ngModel)]="row.packageType" (ngModelChange)="rowsChanged()" aria-label="Package type">
+                        @for (t of packageTypes; track t) { <mat-option [value]="t">{{ humanize(t) }}</mat-option> }
+                      </mat-select>
+                    </mat-form-field>
+                  </td>
+                  <td><mat-form-field subscriptSizing="dynamic" class="cell s"><input matInput [(ngModel)]="row.saidToContain" (ngModelChange)="rowsChanged()" placeholder="For example: hardware" aria-label="Said to contain" /></mat-form-field></td>
+                  <td><mat-form-field subscriptSizing="dynamic" class="cell h"><input matInput [(ngModel)]="row.hsnCode" aria-label="HSN code" /></mat-form-field></td>
+                  <td><mat-form-field subscriptSizing="dynamic" class="cell n"><input matInput type="number" min="0" [(ngModel)]="row.actualWeightKg" (ngModelChange)="rowsChanged()" aria-label="Weight kg" /></mat-form-field></td>
+                  <td><mat-form-field subscriptSizing="dynamic" class="cell n"><input matInput type="number" min="0" [(ngModel)]="row.volumeCft" (ngModelChange)="rowsChanged()" aria-label="Volume CFT" /></mat-form-field></td>
+                  <td><mat-form-field subscriptSizing="dynamic" class="cell v"><input matInput type="number" min="0" [(ngModel)]="row.value" (ngModelChange)="rowsChanged()" aria-label="Goods value" /></mat-form-field></td>
+                  <td>
+                    @if (rows().length > 1) {
+                      <button mat-icon-button class="icon-button-danger" (click)="removeRow(row)" [attr.aria-label]="'Remove line ' + (i + 1)"><mat-icon>close</mat-icon></button>
+                    }
+                  </td>
+                </tr>
+              }
+            </tbody>
+            <tfoot>
+              <tr>
+                <td class="num">{{ totals().packages }}</td><td colspan="3" class="muted">Total</td>
+                <td class="num">{{ totals().weight | number: '1.0-3' }}</td>
+                <td class="num">{{ totals().volume | number: '1.0-3' }}</td>
+                <td class="num">{{ totals().value | number: '1.0-2' }}</td><td></td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2 class="section-title">Documents and instructions</h2>
+        <div class="panel-body form-grid">
+          <mat-form-field>
+            <mat-label>Invoice numbers</mat-label>
+            <input matInput [(ngModel)]="f.invoiceNumbers" placeholder="Separate with commas" />
+          </mat-form-field>
+          <mat-form-field>
+            <mat-label>Declared value</mat-label>
+            <input matInput type="number" min="0" [(ngModel)]="f.declaredValue" (ngModelChange)="changed()" [placeholder]="'' + totals().value" />
+            <mat-hint>Empty = total of goods lines</mat-hint>
+          </mat-form-field>
+          <mat-form-field>
+            <mat-label>E-way bill no</mat-label>
+            <input matInput [(ngModel)]="f.ewayBillNo" (ngModelChange)="changed()" inputmode="numeric" maxlength="12" />
+          </mat-form-field>
+          <mat-form-field>
+            <mat-label>E-way bill valid until</mat-label>
+            <input matInput type="date" [(ngModel)]="f.ewayBillValidUntil" />
+          </mat-form-field>
+          <mat-form-field>
+            <mat-label>Risk</mat-label>
+            <mat-select [(ngModel)]="f.risk">
+              <mat-option value="OWNER">Owner's risk</mat-option>
+              <mat-option value="CARRIER">Carrier's risk</mat-option>
+            </mat-select>
+          </mat-form-field>
+          <mat-form-field>
+            <mat-label>Expected delivery</mat-label>
+            <input matInput type="date" [(ngModel)]="f.expectedDeliveryDate" />
+          </mat-form-field>
+          <mat-form-field>
+            <mat-label>Private marks</mat-label>
+            <input matInput [(ngModel)]="f.privateMarks" />
+          </mat-form-field>
+          <mat-form-field class="wide">
+            <mat-label>Instructions</mat-label>
+            <input matInput [(ngModel)]="f.instructions" placeholder="For example: handle with care, call before delivery" />
+          </mat-form-field>
+        </div>
+      </section>
+    </div>
+
+    <aside class="summary panel" aria-live="polite">
+      <h2 class="section-title">
+        Freight
+        @if (pricingBusy()) { <span class="muted small">pricing…</span> }
+      </h2>
+      <div class="panel-body">
+        @if (pricing(); as p) {
+          <div class="source">
+            @if (p.rateSource === 'NONE') {
+              <span class="tag warn">No rate found</span>
+            } @else {
+              <span class="tag" [class.ok]="p.rateSource === 'CLIENT_CARD'" [class.info]="p.rateSource === 'STANDARD'">{{ humanize(p.rateSource) }}</span>
+              <a [routerLink]="['/rate-cards', p.rateCardId]" class="muted small" target="_blank">{{ p.rateCardCode }}</a>
+            }
+          </div>
+          <dl>
+            <dt>Chargeable weight</dt><dd>{{ p.chargeableWeightKg | number: '1.0-3' }} kg</dd>
+            @if (p.rate !== null) { <dt>Rate</dt><dd>{{ p.rate | number: '1.2-4' }} {{ humanize(p.rateBasis) }}</dd> }
+          </dl>
+          <div class="amount-row">
+            <label for="freight">Freight</label>
+            <mat-form-field subscriptSizing="dynamic" class="amount">
+              <input id="freight" matInput type="number" min="0" [(ngModel)]="f.freight" (ngModelChange)="changed()"
+                     [placeholder]="p.quotedFreight !== null ? '' + p.quotedFreight : 'Enter'" />
+            </mat-form-field>
+          </div>
+          @if (p.quotedFreight !== null && f.freight !== null && f.freight !== p.quotedFreight) {
+            <div class="muted small right">Rate card: {{ p.quotedFreight | number: '1.2-2' }}</div>
+          }
+          @for (c of p.charges; track c.chargeHeadId) {
+            <div class="amount-row">
+              <label [for]="'c-' + c.code">{{ c.name }}
+                @if (c.editControl === 'LOCKED') { <mat-icon class="lock" matTooltip="Fixed on the rate card">lock</mat-icon> }
+              </label>
+              <mat-form-field subscriptSizing="dynamic" class="amount">
+                <input [id]="'c-' + c.code" matInput type="number" min="0" [ngModel]="c.amount" (ngModelChange)="setCharge(c.chargeHeadId, $event)" />
+              </mat-form-field>
+            </div>
+          }
+          @if (optionalHeads().length) {
+            <mat-form-field subscriptSizing="dynamic" class="add-charge">
+              <mat-label>Add a charge</mat-label>
+              <mat-select [ngModel]="null" (ngModelChange)="addCharge($event)">
+                @for (h of optionalHeads(); track h.id) { <mat-option [value]="h">{{ h.name }}</mat-option> }
+              </mat-select>
+            </mat-form-field>
+          }
+          <div class="amount-row">
+            <label for="discount">Discount</label>
+            <mat-form-field subscriptSizing="dynamic" class="amount">
+              <input id="discount" matInput type="number" min="0" [(ngModel)]="f.discount" (ngModelChange)="changed()" placeholder="0" />
+            </mat-form-field>
+          </div>
+          <div class="amount-row">
+            <label for="tax">Tax paid by</label>
+            <mat-form-field subscriptSizing="dynamic" class="amount wide-select">
+              <mat-select id="tax" [ngModel]="f.taxPaidBy ?? p.taxPaidBy" (ngModelChange)="f.taxPaidBy = $event; changed()">
+                @for (o of taxOptions; track o.value) { <mat-option [value]="o.value">{{ o.label }}</mat-option> }
+              </mat-select>
+            </mat-form-field>
+          </div>
+          @if ((f.taxPaidBy ?? p.taxPaidBy) === 'TRANSPORTER') {
+            <div class="amount-row">
+              <label for="taxRate">Tax rate %</label>
+              <mat-form-field subscriptSizing="dynamic" class="amount">
+                <input id="taxRate" matInput type="number" min="0" max="40" [(ngModel)]="f.taxRate" (ngModelChange)="changed()" placeholder="0" />
+              </mat-form-field>
+            </div>
+            <dl><dt>Tax</dt><dd>{{ p.taxAmount | number: '1.2-2' }}</dd></dl>
+          }
+          <div class="grand">
+            <span>Total</span>
+            <strong>{{ p.currency }} {{ p.total | number: '1.2-2' }}</strong>
+          </div>
+          @if (p.transitDays !== null) { <div class="muted small right">Transit about {{ p.transitDays }} days</div> }
+          @if (chargesChanged()) { <button mat-button class="small" (click)="resetCharges()">Back to rate card amounts</button> }
+
+          @for (w of p.warnings; track w) { <p class="notice">{{ w }}</p> }
+          @if (p.needsApproval) {
+            <div class="notice danger">
+              <strong>Needs approval</strong>
+              <ul>@for (r of p.approvalReasons; track r) { <li>{{ r }}</li> }</ul>
+              @if (!session.can('gr.approve')) { <div>Ask your branch manager to book this one.</div> }
+            </div>
+            <mat-form-field class="full">
+              <mat-label>Reason</mat-label>
+              <input matInput [(ngModel)]="f.overrideReason" placeholder="For example: agreed with client on phone" />
+            </mat-form-field>
+          }
+        } @else if (pricingError()) {
+          <p class="notice danger">{{ pricingError() }}</p>
+          <div class="amount-row">
+            <label for="freight2">Freight</label>
+            <mat-form-field subscriptSizing="dynamic" class="amount">
+              <input id="freight2" matInput type="number" min="0" [(ngModel)]="f.freight" (ngModelChange)="changed()" placeholder="Enter" />
+            </mat-form-field>
+          </div>
+        } @else {
+          <p class="muted">Fill in {{ missing().join(', ') }} to see the freight.</p>
+        }
+
+        @if (formError()) { <p class="notice danger" role="alert">{{ formError() }}</p> }
+        <div class="save">
+          @if (!editing()) {
+            <button mat-stroked-button (click)="save(true)" [disabled]="saving()" matTooltip="Book and start the next one">Book and next</button>
+          }
+          <button mat-flat-button (click)="save()" [disabled]="saving()">
+            <mat-icon>check</mat-icon>{{ editing() ? 'Save changes' : 'Book ' + noteName() }}
+          </button>
+        </div>
+      </div>
+    </aside>
+  </div>
+}

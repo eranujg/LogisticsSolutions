@@ -11,7 +11,7 @@
         <ul>
           @for (item of group.items; track item.path) {
             <li>
-              <a [routerLink]="item.path" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: item.path === '/' }">
+              <a [routerLink]="item.path" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: item.path === '/' || !!item.exact }">
                 <span class="material-symbols-outlined" aria-hidden="true">{{ item.icon }}</span>
                 <span>{{ item.label }}</span>
               </a>

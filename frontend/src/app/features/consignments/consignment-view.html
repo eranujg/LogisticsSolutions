@@ -1,0 +1,128 @@
+@if (loading()) { <mat-progress-bar mode="indeterminate" class="loading-bar" /> }
+
+@if (cn(); as c) {
+  <header class="page-head no-print">
+    <div>
+      <a routerLink="/consignments" class="back-link"><mat-icon>arrow_back</mat-icon>GR register</a>
+      <h1>{{ noteName() }} {{ c.summary.cnNo }} <span [class]="'tag ' + statusTag(c.summary.status)">{{ humanize(c.summary.status) }}</span></h1>
+      <p>{{ c.summary.originCity }} → {{ c.summary.destinationCity }} · {{ humanize(c.summary.paymentType) }} · booked {{ c.summary.createdAt | date: 'd MMM y, h:mm a' }}</p>
+    </div>
+    <div class="head-actions">
+      @if (session.can('gr.print')) {
+        <button mat-stroked-button [matMenuTriggerFor]="printMenu"><mat-icon>print</mat-icon>Print</button>
+        <mat-menu #printMenu="matMenu">
+          @for (copy of copies; track copy) { <button mat-menu-item (click)="print(copy)">{{ copy }}</button> }
+        </mat-menu>
+      }
+      @if (c.summary.status === 'BOOKED' && session.can('gr.edit')) {
+        <a mat-stroked-button [routerLink]="['/consignments', c.summary.id, 'edit']"><mat-icon>edit</mat-icon>Edit</a>
+      }
+      @if (c.summary.status === 'BOOKED' && session.can('gr.cancel')) {
+        <button mat-stroked-button class="danger-text" (click)="cancel()"><mat-icon>block</mat-icon>Cancel</button>
+      }
+      @if (session.can('gr.create')) {
+        <a mat-flat-button routerLink="/consignments/new"><mat-icon>add</mat-icon>Book another</a>
+      }
+    </div>
+  </header>
+
+  @if (c.summary.status === 'CANCELLED') {
+    <p class="notice danger no-print">Cancelled by {{ c.cancelledBy }} on {{ c.cancelledAt | date: 'd MMM y, h:mm a' }}: {{ c.cancelReason }}</p>
+  }
+  @if (c.approvedBy) {
+    <p class="notice no-print">Price changes approved by {{ c.approvedBy }}: {{ c.overrideReason }}</p>
+  }
+
+  <article class="gr-doc" [class.cancelled]="c.summary.status === 'CANCELLED'">
+    <header class="doc-head">
+      <div>
+        <div class="company">{{ office()?.companyName ?? '' }}</div>
+        <div class="muted">{{ office()?.name ?? c.summary.bookingLocationCode }}</div>
+      </div>
+      <div class="doc-title">
+        <div class="kind">{{ office()?.consignmentNoteName ?? 'GR' }}</div>
+        <div class="copy">{{ printCopy() }}</div>
+      </div>
+      <div class="doc-no">
+        <div><span class="muted">No.</span> <strong>{{ c.summary.cnNo }}</strong></div>
+        <div><span class="muted">Date</span> {{ c.summary.cnDate | date: 'dd/MM/yyyy' }}</div>
+        <div class="pay">{{ humanize(c.summary.paymentType) }}</div>
+      </div>
+    </header>
+
+    <section class="route">
+      <div><span class="label">From</span><strong>{{ c.summary.originCity }}</strong></div>
+      <div class="arrow" aria-hidden="true">→</div>
+      <div><span class="label">To</span><strong>{{ c.summary.destinationCity }}</strong></div>
+      <div><span class="label">Service</span>{{ humanize(c.summary.service) }}</div>
+      <div><span class="label">Delivery</span>{{ humanize(c.deliveryType) }}@if (c.deliveryLocationCode) { · {{ c.deliveryLocationCode }} }</div>
+    </section>
+
+    <section class="parties">
+      <div>
+        <span class="label">Consignor</span>
+        <strong>{{ c.summary.consignorName }}</strong>
+        @if (c.consignorTaxId) { <div>GSTIN {{ c.consignorTaxId }}</div> }
+        @if (c.consignorMobile) { <div>{{ c.consignorMobile }}</div> }
+      </div>
+      <div>
+        <span class="label">Consignee</span>
+        <strong>{{ c.summary.consigneeName }}</strong>
+        @if (c.consigneeTaxId) { <div>GSTIN {{ c.consigneeTaxId }}</div> }
+        @if (c.consigneeMobile) { <div>{{ c.consigneeMobile }}</div> }
+      </div>
+      <div>
+        <span class="label">Bill to</span>
+        <strong>{{ c.summary.billToName }}</strong>
+      </div>
+    </section>
+
+    <div class="body">
+      <table class="doc-table goods">
+        <thead><tr><th class="num">Pkgs</th><th>Type</th><th>Said to contain</th><th>HSN</th><th class="num">Weight kg</th></tr></thead>
+        <tbody>
+          @for (p of c.packages; track $index) {
+            <tr><td class="num">{{ p.packages }}</td><td>{{ humanize(p.packageType) }}</td><td>{{ p.saidToContain }}</td><td>{{ p.hsnCode }}</td><td class="num">{{ p.actualWeightKg | number: '1.0-3' }}</td></tr>
+          }
+        </tbody>
+        <tfoot>
+          <tr><td class="num">{{ c.summary.totalPackages }}</td><td colspan="3">Actual {{ c.actualWeightKg | number: '1.0-3' }} kg · charged {{ c.summary.chargeableWeightKg | number: '1.0-3' }} kg</td><td></td></tr>
+        </tfoot>
+      </table>
+
+      <table class="doc-table money">
+        <tbody>
+          <tr><td>Freight</td><td class="num">{{ c.freight | number: '1.2-2' }}</td></tr>
+          @for (ch of c.charges; track ch.chargeHeadId) { <tr><td>{{ ch.name }}</td><td class="num">{{ ch.amount | number: '1.2-2' }}</td></tr> }
+          @if (c.discount > 0) { <tr><td>Discount</td><td class="num">−{{ c.discount | number: '1.2-2' }}</td></tr> }
+          @if (c.taxAmount > 0) { <tr><td>Tax {{ c.taxRate }}%</td><td class="num">{{ c.taxAmount | number: '1.2-2' }}</td></tr> }
+          <tr class="grand"><td>Total {{ c.summary.currency }}</td><td class="num">{{ c.summary.total | number: '1.2-2' }}</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <section class="facts">
+      <div><span class="label">Declared value</span>{{ c.declaredValue | number: '1.2-2' }}</div>
+      <div><span class="label">Invoice no</span>{{ c.invoiceNumbers.join(', ') || '—' }}</div>
+      <div><span class="label">E-way bill</span>{{ c.ewayBillNo || '—' }}@if (c.ewayBillValidUntil) { · till {{ c.ewayBillValidUntil | date: 'dd/MM/yyyy' }} }</div>
+      <div><span class="label">Risk</span>{{ c.risk === 'OWNER' ? "Owner's risk" : "Carrier's risk" }}</div>
+      <div><span class="label">Tax</span>{{ humanize(c.taxPaidBy) }}</div>
+      @if (c.privateMarks) { <div><span class="label">Private marks</span>{{ c.privateMarks }}</div> }
+      @if (c.instructions) { <div class="wide"><span class="label">Instructions</span>{{ c.instructions }}</div> }
+    </section>
+
+    <footer class="signs">
+      <div>Consignor's signature</div>
+      <div>For {{ office()?.companyName ?? 'the transporter' }}</div>
+    </footer>
+  </article>
+
+  <section class="panel no-print history">
+    <h2 class="section-title">History</h2>
+    <ol class="panel-body">
+      @for (e of c.events; track $index) {
+        <li><span [class]="'tag ' + statusTag(e.status)">{{ humanize(e.status) }}</span> {{ e.occurredAt | date: 'd MMM y, h:mm a' }} · {{ e.userId }} @if (e.note) { · {{ e.note }} }</li>
+      }
+    </ol>
+  </section>
+}

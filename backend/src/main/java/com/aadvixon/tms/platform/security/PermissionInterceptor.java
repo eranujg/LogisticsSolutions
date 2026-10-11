@@ -15,7 +15,8 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
  *
  * <p>The first path segment after {@code /api/v1/} maps to a permission module and
  * the HTTP method to an action: GET = view, POST = create, PUT/PATCH = edit,
- * DELETE = delete (restoring from the recycle bin counts as edit).
+ * DELETE = delete (restoring from the recycle bin counts as edit; POST to
+ * {@code .../cancel} needs the cancel permission).
  * <b>Paths not listed are denied</b>, so a new endpoint must be added here.
  */
 @Configuration(proxyBeanMethods = false)
@@ -31,6 +32,7 @@ class PermissionInterceptor implements HandlerInterceptor, WebMvcConfigurer {
             Map.entry("permissions", "role"),
             Map.entry("parties", "party"),
             Map.entry("rate-cards", "rate_card"),
+            Map.entry("consignments", "gr"),
             Map.entry("charge-heads", "rate_card"),
             Map.entry("number-series", "number_series"),
             Map.entry("audit", "audit"),
@@ -71,10 +73,14 @@ class PermissionInterceptor implements HandlerInterceptor, WebMvcConfigurer {
     }
 
     private static String action(String method, String[] segments) {
-        boolean restore = segments.length > 0 && "restore".equals(segments[segments.length - 1]);
+        String last = segments.length > 0 ? segments[segments.length - 1] : "";
         return switch (method) {
             case "GET", "HEAD", "OPTIONS" -> "view";
-            case "POST" -> restore ? "edit" : "create";
+            case "POST" -> switch (last) {
+                case "restore" -> "edit";
+                case "cancel" -> "cancel";
+                default -> "create";
+            };
             case "PUT", "PATCH" -> "edit";
             case "DELETE" -> "delete";
             default -> "unknown";

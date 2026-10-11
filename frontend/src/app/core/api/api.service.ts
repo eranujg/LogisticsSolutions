@@ -3,7 +3,7 @@ import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { appSettings } from '../config';
 import {
-  AppUser, ChargeHead, City, Company, CountryPack, DuplicateMatch, Location, Party, Permission, RateCard,
+  AppUser, BookingOffice, ChargeHead, City, Consignment, ConsignmentPricing, ConsignmentSummary, Company, CountryPack, DuplicateMatch, Location, Party, Permission, RateCard,
   RateCardSummary, RateQuote, Region, Role, SystemInfo
 } from './models';
 
@@ -133,6 +133,32 @@ export class ApiService {
 
   rateLookup(params: Params): Observable<RateQuote> {
     return this.http.get<RateQuote>(`${this.base}/rate-cards/lookup`, { params: toParams(params) });
+  }
+
+  bookingOffices(): Observable<BookingOffice[]> {
+    return this.http.get<BookingOffice[]>(`${this.base}/consignments/offices`);
+  }
+
+  consignments(params: Params = {}): Observable<ConsignmentSummary[]> {
+    return this.http.get<ConsignmentSummary[]>(`${this.base}/consignments`, { params: toParams(params) });
+  }
+
+  consignment(id: string): Observable<Consignment> {
+    return this.http.get<Consignment>(`${this.base}/consignments/${id}`);
+  }
+
+  previewConsignment(body: unknown): Observable<ConsignmentPricing> {
+    return this.http.post<ConsignmentPricing>(`${this.base}/consignments/preview`, body);
+  }
+
+  saveConsignment(id: string | null, body: unknown): Observable<Consignment> {
+    return id
+      ? this.http.put<Consignment>(`${this.base}/consignments/${id}`, body)
+      : this.http.post<Consignment>(`${this.base}/consignments`, body);
+  }
+
+  cancelConsignment(id: string, reason: string): Observable<Consignment> {
+    return this.http.post<Consignment>(`${this.base}/consignments/${id}/cancel`, { reason });
   }
 
   softDelete(resource: string, id: string, reason: string): Observable<void> {
