@@ -56,7 +56,9 @@ Health check: `GET /api/v1/system/info` returns app name, database time and tena
 Top-level packages under `com.aadvixon.tms` are modules: `platform` (tenancy, audit, recycle bin, numbering,
 tenant provisioning, errors), `company` (country packs, company, tax registrations), `location`, `geo`
 (cities, city services), `iam` (users, roles, permissions), `party` (consignors/consignees/bill-to), `rate` (charge heads,
-rate cards, `RateEngine` for rate lookup: client card, then standard rates; most specific line wins).
+rate cards, `RateEngine` for rate lookup: client card, then standard rates; most specific line wins),
+`consignment` (GR / bilty booking: `ConsignmentPricing` prices and flags overrides needing `gr.approve`;
+numbers per booking office and financial year, series auto-created on first use).
 Data access uses `JdbcClient` with explicit SQL; row mappers use `platform.db.Rows`.
 
 ## Multi-tenancy (read before touching data access)
