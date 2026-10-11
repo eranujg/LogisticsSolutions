@@ -1,0 +1,134 @@
+:host {
+  display: block;
+  min-width: 0;
+}
+
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-bottom: 0.4rem;
+  color: var(--tms-muted);
+  font-size: 0.85rem;
+  text-decoration: none;
+
+  mat-icon {
+    font-size: 1.1rem;
+    width: 1.1rem;
+    height: 1.1rem;
+  }
+}
+
+h1 .tag {
+  vertical-align: middle;
+  margin-left: 0.4rem;
+}
+
+.lines-scroll {
+  position: relative;
+  max-width: 100%;
+  overflow-x: auto;
+  padding: 0 0.5rem 0.75rem;
+}
+
+table.lines,
+table.charges {
+  border-collapse: collapse;
+  width: 100%;
+
+  th {
+    padding: 0.4rem 0.3rem;
+    color: var(--tms-muted);
+    font-size: 0.78rem;
+    font-weight: 600;
+    text-align: left;
+    white-space: nowrap;
+    border-bottom: 1px solid var(--tms-rule);
+  }
+
+  td {
+    padding: 0.25rem 0.3rem;
+    vertical-align: middle;
+  }
+}
+
+table.lines {
+  min-width: 72rem;
+
+  tbody tr:not(.slab-row) + tr:not(.slab-row) td {
+    border-top: 1px dashed #eceef5;
+  }
+}
+
+td.city {
+  width: 10rem;
+  min-width: 9rem;
+}
+
+.cell {
+  width: 100%;
+  min-width: 7rem;
+
+  &.number {
+    width: 6rem;
+    min-width: 5rem;
+  }
+
+  &.days {
+    width: 4.5rem;
+    min-width: 4rem;
+  }
+
+  &.basis {
+    min-width: 9.5rem;
+  }
+}
+
+.cell.number input,
+.cell.days input {
+  text-align: right;
+}
+
+.row-actions {
+  white-space: nowrap;
+
+  .on {
+    color: var(--tms-ink-blue);
+  }
+}
+
+.slab-row td {
+  background: var(--tms-paper);
+}
+
+.slabs {
+  position: sticky;
+  left: 0.5rem;
+  box-sizing: border-box;
+  width: min(52rem, calc(100vw - 6rem));
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem 1rem;
+  padding: 0.5rem 0.4rem;
+
+  > .muted {
+    flex-basis: 100%;
+    order: 0;
+    font-size: 0.82rem;
+  }
+}
+
+.slab {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+table.charges {
+  max-width: 52rem;
+
+  tr.dim td:not(:first-child) {
+    opacity: 0.55;
+  }
+}

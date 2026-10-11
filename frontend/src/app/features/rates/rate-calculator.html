@@ -1,0 +1,103 @@
+<header class="page-head">
+  <div>
+    <h1>Rate calculator</h1>
+    <p>Price a shipment from the rate cards, the same way a booking does. Use it for phone enquiries or to check a card.</p>
+  </div>
+</header>
+
+<div class="layout">
+  <section class="panel">
+    <h2 class="section-title">Shipment</h2>
+    <form class="panel-body" (ngSubmit)="calculate()">
+      <div class="form-grid">
+        <tms-party-picker class="wide" label="Client (optional)" placeholder="Empty = standard rates"
+                          [(partyId)]="input.partyId" [(partyName)]="input.partyName" />
+        <tms-city-picker label="From city" placeholder="Search city" [(cityId)]="input.originCityId" [(cityName)]="input.originCityName" />
+        <tms-city-picker label="To city" placeholder="Search city" [(cityId)]="input.destinationCityId" [(cityName)]="input.destinationCityName" />
+        <mat-form-field>
+          <mat-label>Service</mat-label>
+          <mat-select [(ngModel)]="input.service" name="service">
+            <mat-option [value]="null">Not set</mat-option>
+            @for (o of serviceOptions; track o.value) { <mat-option [value]="o.value">{{ o.label }}</mat-option> }
+          </mat-select>
+        </mat-form-field>
+        <mat-form-field>
+          <mat-label>Payment</mat-label>
+          <mat-select [(ngModel)]="input.paymentType" name="paymentType">
+            <mat-option [value]="null">Not set</mat-option>
+            @for (o of paymentOptions; track o.value) { <mat-option [value]="o.value">{{ o.label }}</mat-option> }
+          </mat-select>
+        </mat-form-field>
+        <mat-form-field>
+          <mat-label>Actual weight (kg)</mat-label>
+          <input matInput type="number" min="0" [(ngModel)]="input.actualWeightKg" name="actualWeightKg" />
+        </mat-form-field>
+        <mat-form-field>
+          <mat-label>Volume (CFT)</mat-label>
+          <input matInput type="number" min="0" [(ngModel)]="input.volumeCft" name="volumeCft" />
+        </mat-form-field>
+        <mat-form-field>
+          <mat-label>Packages</mat-label>
+          <input matInput type="number" min="0" [(ngModel)]="input.packages" name="packages" />
+        </mat-form-field>
+        <mat-form-field>
+          <mat-label>Goods value</mat-label>
+          <input matInput type="number" min="0" [(ngModel)]="input.declaredValue" name="declaredValue" />
+        </mat-form-field>
+        <mat-form-field>
+          <mat-label>Vehicle type</mat-label>
+          <input matInput [(ngModel)]="input.vehicleType" name="vehicleType" placeholder="For FTL lanes" />
+        </mat-form-field>
+        <mat-form-field>
+          <mat-label>Distance (km)</mat-label>
+          <input matInput type="number" min="0" [(ngModel)]="input.distanceKm" name="distanceKm" placeholder="Per-km rates only" />
+        </mat-form-field>
+        <mat-form-field>
+          <mat-label>Booking date</mat-label>
+          <input matInput type="date" [(ngModel)]="input.date" name="date" />
+        </mat-form-field>
+      </div>
+      @if (error()) { <p class="form-error" role="alert">{{ error() }}</p> }
+      <div class="actions">
+        <button mat-button type="button" (click)="reset()">Clear</button>
+        <button mat-flat-button type="submit" [disabled]="working()"><mat-icon>calculate</mat-icon>Calculate</button>
+      </div>
+    </form>
+  </section>
+
+  <section class="panel" aria-live="polite">
+    <h2 class="section-title">Result</h2>
+    <div class="panel-body">
+      @if (quote(); as q) {
+        @if (q.found) {
+          <div class="result-head">
+            <div>
+              <span class="tag" [class.ok]="q.source === 'CLIENT_CARD'" [class.info]="q.source === 'STANDARD'">{{ humanize(q.source) }}</span>
+              <a [routerLink]="['/rate-cards', q.rateCardId]" class="muted"> {{ q.rateCardCode }} · {{ q.rateCardName }}</a>
+            </div>
+            <div class="total">{{ q.currency }} {{ q.total | number: '1.2-2' }}</div>
+          </div>
+          <dl>
+            <dt>Actual weight</dt><dd>{{ q.actualWeightKg | number: '1.0-3' }} kg</dd>
+            @if (q.volumetricWeightKg) { <dt>Volumetric weight</dt><dd>{{ q.volumetricWeightKg | number: '1.0-3' }} kg</dd> }
+            <dt>Chargeable weight</dt><dd>{{ q.chargeableWeightKg | number: '1.0-3' }} kg</dd>
+            <dt>Rate</dt><dd>{{ q.rate | number: '1.2-4' }} {{ humanize(q.rateBasis) | lowercase }}</dd>
+            <dt>Freight</dt>
+            <dd>{{ q.freight | number: '1.2-2' }} @if (q.minimumApplied) { <span class="tag warn">minimum</span> }</dd>
+            @for (c of q.charges; track c.chargeHeadId) {
+              <dt>{{ c.name }}</dt><dd>{{ c.amount | number: '1.2-2' }}</dd>
+            }
+            <dt class="strong">Total before tax</dt><dd class="strong">{{ q.total | number: '1.2-2' }}</dd>
+            @if (q.transitDays !== null) { <dt>Transit</dt><dd>{{ q.transitDays }} days</dd> }
+          </dl>
+          <p class="muted small">Tax (GST etc.) is added at booking from the country pack.</p>
+        } @else {
+          <p class="notice" [class.danger]="q.blocked">{{ q.message }}</p>
+          @if (q.rateCardId) { <a [routerLink]="['/rate-cards', q.rateCardId]">Open {{ q.rateCardCode }}</a> }
+        }
+      } @else {
+        <p class="muted">Choose the cities and enter weight or packages, then calculate.</p>
+      }
+    </div>
+  </section>
+</div>

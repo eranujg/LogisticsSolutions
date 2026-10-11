@@ -1,0 +1,262 @@
+<header class="page-head">
+  <div>
+    <a routerLink="/rate-cards" class="back-link"><mat-icon>arrow_back</mat-icon>Rate cards</a>
+    <h1>
+      {{ title() }}
+      @if (card()) { <span [class]="'tag ' + statusTag(status())">{{ humanize(status()) }}</span> }
+    </h1>
+    @if (card(); as c) {
+      <p>
+        {{ c.card.partyName ?? 'Standard rates' }} · valid {{ c.card.validFrom }} – {{ c.card.validTo ?? 'open' }}
+        @if (c.card.approvedBy) { · approved by {{ c.card.approvedBy }} }
+        @if (c.previousCardId) { · <a [routerLink]="['/rate-cards', c.previousCardId]">previous version</a> }
+      </p>
+    } @else {
+      <p>Leave the client empty for standard rates. Leave a lane's cities empty to mean any city.</p>
+    }
+  </div>
+  <div class="head-actions">
+    @if (editable()) {
+      <button mat-stroked-button (click)="save()" [disabled]="saving()"><mat-icon>save</mat-icon>Save draft</button>
+    }
+    @if ((status() === 'DRAFT' || status() === 'SUSPENDED') && session.can('rate_card.approve') && (editable() || status() === 'SUSPENDED')) {
+      <button mat-flat-button (click)="activate()" [disabled]="saving()"
+              matTooltip="Bookings start using these rates from the valid-from date"><mat-icon>verified</mat-icon>Activate</button>
+    }
+    @if ((status() === 'ACTIVE' || status() === 'SUSPENDED') && session.can('rate_card.create')) {
+      <button mat-flat-button (click)="openRevise()" matTooltip="New draft version with the same rates"><mat-icon>edit_note</mat-icon>Revise rates</button>
+    }
+    @if (status() === 'ACTIVE' && session.can('rate_card.edit')) {
+      <button mat-stroked-button (click)="suspend()"><mat-icon>pause_circle</mat-icon>Suspend</button>
+    }
+    @if (card() && status() !== 'ACTIVE' && session.can('rate_card.delete')) {
+      <button mat-icon-button class="icon-button-danger" (click)="remove()" aria-label="Delete rate card" matTooltip="Delete"><mat-icon>delete</mat-icon></button>
+    }
+  </div>
+</header>
+
+@if (loading()) { <mat-progress-bar mode="indeterminate" class="loading-bar" /> }
+
+@if (!loading()) {
+  @if (status() === 'ACTIVE') {
+    <p class="notice">Active rates are locked so bookings and invoices match. Use <strong>Revise rates</strong> to change them from a new date.</p>
+  } @else if (status() === 'SUPERSEDED') {
+    <p class="notice">This version has been replaced by a newer one and is kept for past bookings.</p>
+  }
+  @if (formError()) { <p class="notice danger" role="alert">{{ formError() }}</p> }
+
+  <section class="panel">
+    <h2 class="section-title">Details</h2>
+    <div class="panel-body form-grid">
+      <mat-form-field>
+        <mat-label>Name</mat-label>
+        <input matInput [(ngModel)]="draft.name" [disabled]="!editable()" placeholder="For example: Verma Steels 2026-27" />
+      </mat-form-field>
+      <tms-party-picker label="Client" placeholder="Empty = standard rates" [disabled]="!editable() || (card()?.card?.version ?? 1) > 1"
+                        [(partyId)]="draft.partyId" [(partyName)]="draft.partyName" />
+      <mat-form-field>
+        <mat-label>Contract / agreement ref</mat-label>
+        <input matInput [(ngModel)]="draft.contractRef" [disabled]="!editable()" />
+      </mat-form-field>
+      <mat-form-field>
+        <mat-label>Valid from</mat-label>
+        <input matInput type="date" [(ngModel)]="draft.validFrom" [disabled]="!editable()" />
+      </mat-form-field>
+      <mat-form-field>
+        <mat-label>Valid to</mat-label>
+        <input matInput type="date" [(ngModel)]="draft.validTo" [disabled]="!editable()" />
+        <mat-hint>Empty = until revised</mat-hint>
+      </mat-form-field>
+      <mat-form-field>
+        <mat-label>Currency</mat-label>
+        <mat-select [(ngModel)]="draft.currency" [disabled]="!editable()">
+          @for (code of ['INR', 'CAD', 'USD', 'AUD']; track code) { <mat-option [value]="code">{{ code }}</mat-option> }
+        </mat-select>
+      </mat-form-field>
+      @if (draft.partyId) {
+        <div class="wide">
+          <mat-checkbox [(ngModel)]="draft.fallbackToStandard" [disabled]="!editable()">
+            Use standard rates for lanes not on this card
+          </mat-checkbox>
+          <div class="muted small">If unticked, a booking on another lane is blocked until a rate is approved.</div>
+        </div>
+      }
+      <mat-form-field class="wide">
+        <mat-label>Notes</mat-label>
+        <input matInput [(ngModel)]="draft.notes" [disabled]="!editable()" />
+      </mat-form-field>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2 class="section-title">
+      Lanes and rates
+      @if (editable()) { <button mat-stroked-button (click)="addLine()"><mat-icon>add</mat-icon>Add lane</button> }
+    </h2>
+    <div class="lines-scroll">
+      <table class="lines">
+        <thead>
+          <tr>
+            <th>From</th><th>To</th><th>Service</th><th>Payment</th><th>Vehicle</th><th>Rate basis</th>
+            <th class="num">Rate</th><th class="num">Min charge</th><th class="num">Min kg</th>
+            <th class="num" matTooltip="Volumetric weight: kg per cubic foot. 0 = not used">kg / CFT</th>
+            <th class="num">Days</th><th><span class="sr-only">Actions</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (line of lines(); track line.key; let i = $index) {
+            <tr>
+              <td class="city"><tms-city-picker [compact]="true" placeholder="Any" [disabled]="!editable()"
+                                   [(cityId)]="line.originCityId" [(cityName)]="line.originCityName" /></td>
+              <td class="city"><tms-city-picker [compact]="true" placeholder="Any" [disabled]="!editable()"
+                                   [(cityId)]="line.destinationCityId" [(cityName)]="line.destinationCityName" /></td>
+              <td>
+                <mat-form-field subscriptSizing="dynamic" class="cell">
+                  <mat-select [(ngModel)]="line.service" [disabled]="!editable()" aria-label="Service" placeholder="Any">
+                    <mat-option [value]="null">Any</mat-option>
+                    @for (o of serviceOptions; track o.value) { <mat-option [value]="o.value">{{ o.value }}</mat-option> }
+                  </mat-select>
+                </mat-form-field>
+              </td>
+              <td>
+                <mat-form-field subscriptSizing="dynamic" class="cell">
+                  <mat-select [(ngModel)]="line.paymentType" [disabled]="!editable()" aria-label="Payment type" placeholder="Any">
+                    <mat-option [value]="null">Any</mat-option>
+                    @for (o of paymentOptions; track o.value) { <mat-option [value]="o.value">{{ o.label }}</mat-option> }
+                  </mat-select>
+                </mat-form-field>
+              </td>
+              <td>
+                <mat-form-field subscriptSizing="dynamic" class="cell">
+                  <input matInput [(ngModel)]="line.vehicleType" [disabled]="!editable()" placeholder="Any" aria-label="Vehicle type" />
+                </mat-form-field>
+              </td>
+              <td>
+                <mat-form-field subscriptSizing="dynamic" class="cell basis">
+                  <mat-select [(ngModel)]="line.rateBasis" [disabled]="!editable()" aria-label="Rate basis">
+                    @for (o of basisOptions; track o.value) { <mat-option [value]="o.value">{{ o.label }}</mat-option> }
+                  </mat-select>
+                </mat-form-field>
+              </td>
+              <td>
+                <mat-form-field subscriptSizing="dynamic" class="cell number">
+                  <input matInput type="number" min="0" [(ngModel)]="line.rate" [disabled]="!editable() || line.slabs.length > 0"
+                         [attr.aria-label]="'Rate ' + rateHint(line.rateBasis)" />
+                </mat-form-field>
+              </td>
+              <td>
+                <mat-form-field subscriptSizing="dynamic" class="cell number">
+                  <input matInput type="number" min="0" [(ngModel)]="line.minCharge" [disabled]="!editable()" aria-label="Minimum charge" />
+                </mat-form-field>
+              </td>
+              <td>
+                <mat-form-field subscriptSizing="dynamic" class="cell number">
+                  <input matInput type="number" min="0" [(ngModel)]="line.minWeightKg" [disabled]="!editable()" aria-label="Minimum weight kg" />
+                </mat-form-field>
+              </td>
+              <td>
+                <mat-form-field subscriptSizing="dynamic" class="cell number">
+                  <input matInput type="number" min="0" step="0.5" [(ngModel)]="line.volumetricKgPerCft" [disabled]="!editable()" aria-label="Kg per cubic foot" />
+                </mat-form-field>
+              </td>
+              <td>
+                <mat-form-field subscriptSizing="dynamic" class="cell days">
+                  <input matInput type="number" min="0" max="60" [(ngModel)]="line.transitDays" [disabled]="!editable()" aria-label="Transit days" />
+                </mat-form-field>
+              </td>
+              <td class="row-actions">
+                <button mat-icon-button (click)="toggleSlabs(line)" [class.on]="line.slabs.length > 0"
+                        [matTooltip]="line.slabs.length ? line.slabs.length + ' slabs' : 'Add slabs'"
+                        [attr.aria-label]="'Slabs for lane ' + (i + 1)" [disabled]="!editable() && !line.slabs.length">
+                  <mat-icon>stacked_bar_chart</mat-icon>
+                </button>
+                @if (editable()) {
+                  <button mat-icon-button (click)="copyLine(line)" matTooltip="Copy lane" [attr.aria-label]="'Copy lane ' + (i + 1)"><mat-icon>content_copy</mat-icon></button>
+                  <button mat-icon-button class="icon-button-danger" (click)="removeLine(line)" matTooltip="Remove lane"
+                          [attr.aria-label]="'Remove lane ' + (i + 1)"><mat-icon>close</mat-icon></button>
+                }
+              </td>
+            </tr>
+            @if (line.showSlabs) {
+              <tr class="slab-row">
+                <td colspan="12">
+                  <div class="slabs">
+                    <strong>Slabs</strong>
+                    <span class="muted">The whole {{ slabUnit(line) }} is charged at the rate of the slab it falls in.</span>
+                    @for (slab of line.slabs; track $index; let s = $index) {
+                      <div class="slab">
+                        <mat-form-field subscriptSizing="dynamic" class="cell number">
+                          <mat-label>From {{ slabUnit(line) }}</mat-label>
+                          <input matInput type="number" min="0" [(ngModel)]="slab.fromQty" [disabled]="!editable()" />
+                        </mat-form-field>
+                        <mat-form-field subscriptSizing="dynamic" class="cell number">
+                          <mat-label>Below</mat-label>
+                          <input matInput type="number" min="0" [(ngModel)]="slab.toQty" [disabled]="!editable()" placeholder="and above" />
+                        </mat-form-field>
+                        <mat-form-field subscriptSizing="dynamic" class="cell number">
+                          <mat-label>Rate {{ rateHint(line.rateBasis) }}</mat-label>
+                          <input matInput type="number" min="0" [(ngModel)]="slab.rate" [disabled]="!editable()" />
+                        </mat-form-field>
+                        @if (editable()) {
+                          <button mat-icon-button class="icon-button-danger" (click)="removeSlab(line, s)" aria-label="Remove slab"><mat-icon>close</mat-icon></button>
+                        }
+                      </div>
+                    }
+                    @if (editable()) { <button mat-button (click)="addSlab(line)"><mat-icon>add</mat-icon>Add slab</button> }
+                  </div>
+                </td>
+              </tr>
+            }
+          } @empty {
+            <tr><td colspan="12" class="empty">No lanes yet. Add a lane with the rate per kg, package or trip.</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2 class="section-title">Charges on this card</h2>
+    <div class="panel-body">
+      <p class="muted small">Tick a charge to give this card its own value; others use the default from <a routerLink="/charge-heads">charge heads</a>.</p>
+      <table class="charges">
+        <thead><tr><th>Charge</th><th>Calculated</th><th class="num">Value</th><th class="num">Minimum</th><th>On every GR</th></tr></thead>
+        <tbody>
+          @for (c of charges(); track c.head.id) {
+            <tr [class.dim]="!c.use">
+              <td><mat-checkbox [(ngModel)]="c.use" [disabled]="!editable()">{{ c.head.name }}</mat-checkbox></td>
+              <td>{{ humanize(c.head.calcMethod) }}</td>
+              <td>
+                <mat-form-field subscriptSizing="dynamic" class="cell number">
+                  <input matInput type="number" min="0" [(ngModel)]="c.value" [disabled]="!editable() || !c.use" [attr.aria-label]="c.head.name + ' value'" />
+                </mat-form-field>
+              </td>
+              <td>
+                <mat-form-field subscriptSizing="dynamic" class="cell number">
+                  <input matInput type="number" min="0" [(ngModel)]="c.minAmount" [disabled]="!editable() || !c.use" [attr.aria-label]="c.head.name + ' minimum'" />
+                </mat-form-field>
+              </td>
+              <td><mat-checkbox [(ngModel)]="c.isAuto" [disabled]="!editable() || !c.use">Auto</mat-checkbox></td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </section>
+}
+
+<ng-template #reviseDialog>
+  <h2 mat-dialog-title>Revise rates</h2>
+  <mat-dialog-content>
+    <p>A new draft version is made with the same lanes and charges. Change what you need, then activate it.
+       The current version ends the day before the new one starts.</p>
+    <mat-form-field class="full">
+      <mat-label>New rates start on</mat-label>
+      <input matInput type="date" [ngModel]="reviseFrom()" (ngModelChange)="reviseFrom.set($event)" />
+    </mat-form-field>
+  </mat-dialog-content>
+  <mat-dialog-actions align="end">
+    <button mat-button (click)="closeRevise()">Cancel</button>
+    <button mat-flat-button (click)="revise()" [disabled]="!reviseFrom()">Create draft</button>
+  </mat-dialog-actions>
+</ng-template>

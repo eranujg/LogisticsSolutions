@@ -9,7 +9,9 @@ export function humanize(code: string | null | undefined): string {
     PTY_LTD: 'Pty Ltd', S_CORP: 'S corporation', C_CORP: 'C corporation', '3PL': '3PL', ODA: 'ODA',
     GST_HST: 'GST/HST', GSTIN: 'GSTIN', PAN: 'PAN', TAN: 'TAN', BN: 'BN', QST: 'QST', EIN: 'EIN', ABN: 'ABN',
     ACN: 'ACN', TFN: 'TFN', USDOT: 'USDOT', MC: 'MC', UCR: 'UCR', IFTA: 'IFTA', CVOR: 'CVOR', NSC: 'NSC',
-    CIN: 'CIN', GR: 'GR', POD: 'POD', UDYAM: 'Udyam', NHVAS: 'NHVAS', CBSA_CARRIER_CODE: 'CBSA carrier code'
+    CIN: 'CIN', GR: 'GR', POD: 'POD', FTL: 'FTL (full load)', PTL: 'PTL (part load)', ODC: 'ODC (over-dimensional)',
+    PER_KG: 'Per kg', PER_KM: 'Per km', PERCENT_OF_VALUE: '% of goods value', PERCENT_OF_FREIGHT: '% of freight',
+    RATE_CARD: 'From rate card', CLIENT_CARD: 'Client rate card', STANDARD: 'Standard rates', UDYAM: 'Udyam', NHVAS: 'NHVAS', CBSA_CARRIER_CODE: 'CBSA carrier code'
   };
   if (special[code]) {
     return special[code];
@@ -48,3 +50,8 @@ export const USER_TYPES = [
 ] as const;
 export const USER_STATUSES = ['INVITED', 'ACTIVE', 'SUSPENDED', 'DEACTIVATED'] as const;
 export const CITY_CLASSES = ['METRO', 'TIER_1', 'TIER_2', 'TIER_3', 'RURAL'] as const;
+export const SERVICES = ['FTL', 'PTL', 'EXPRESS', 'LOCAL', 'CONTAINER', 'ODC'] as const;
+export const RATE_BASES = ['PER_KG', 'PER_TONNE', 'PER_PACKAGE', 'PER_TRIP', 'PER_KM', 'PERCENT_OF_VALUE'] as const;
+export const CHARGE_METHODS = ['FIXED', 'PER_PACKAGE', 'PER_KG', 'PERCENT_OF_FREIGHT', 'PERCENT_OF_VALUE'] as const;
+export const EDIT_CONTROLS = ['FREE', 'INCREASE_ONLY', 'LOCKED'] as const;
+export const RATE_CARD_STATUSES = ['DRAFT', 'ACTIVE', 'SUSPENDED', 'SUPERSEDED'] as const;

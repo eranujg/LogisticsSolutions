@@ -37,6 +37,30 @@ export const routes: Routes = [
         loadComponent: () => import('./features/parties/parties-page').then((m) => m.PartiesPage)
       },
       {
+        path: 'rate-cards',
+        title: 'Rate cards',
+        canActivate: [permissionGuard('rate_card.view')],
+        loadComponent: () => import('./features/rates/rate-cards-page').then((m) => m.RateCardsPage)
+      },
+      {
+        path: 'rate-cards/:id',
+        title: 'Rate card',
+        canActivate: [permissionGuard('rate_card.view')],
+        loadComponent: () => import('./features/rates/rate-card-editor').then((m) => m.RateCardEditor)
+      },
+      {
+        path: 'rate-calculator',
+        title: 'Rate calculator',
+        canActivate: [permissionGuard('rate_card.view')],
+        loadComponent: () => import('./features/rates/rate-calculator').then((m) => m.RateCalculator)
+      },
+      {
+        path: 'charge-heads',
+        title: 'Charge heads',
+        canActivate: [permissionGuard('rate_card.view')],
+        loadComponent: () => import('./features/rates/charge-heads-page').then((m) => m.ChargeHeadsPage)
+      },
+      {
         path: 'users',
         title: 'Users',
         canActivate: [permissionGuard('user.view')],

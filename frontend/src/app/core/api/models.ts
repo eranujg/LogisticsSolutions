@@ -150,3 +150,118 @@ export interface SystemInfo {
   databaseTime: string;
   tenantCount: number;
 }
+
+export interface ChargeHead {
+  id: string;
+  code: string;
+  name: string;
+  calcMethod: string;
+  defaultValue: number;
+  minAmount: number;
+  isAuto: boolean;
+  editControl: string;
+  taxable: boolean;
+  taxCode: string | null;
+  sortOrder: number;
+  isSystem: boolean;
+  active: boolean;
+}
+
+export interface RateCardSummary {
+  id: string;
+  code: string;
+  version: number;
+  name: string;
+  partyId: string | null;
+  partyName: string | null;
+  contractRef: string | null;
+  currency: string;
+  validFrom: string;
+  validTo: string | null;
+  status: string;
+  fallbackToStandard: boolean;
+  lineCount: number;
+  approvedBy: string | null;
+  approvedAt: string | null;
+  createdAt: string;
+}
+
+export interface RateSlab {
+  id?: string;
+  fromQty: number;
+  toQty: number | null;
+  rate: number;
+}
+
+export interface RateLine {
+  id?: string;
+  originCityId: string | null;
+  originCityName: string | null;
+  destinationCityId: string | null;
+  destinationCityName: string | null;
+  originLocationId: string | null;
+  destinationLocationId: string | null;
+  service: string | null;
+  vehicleType: string | null;
+  commodity: string | null;
+  paymentType: string | null;
+  rateBasis: string;
+  rate: number;
+  minCharge: number;
+  minWeightKg: number;
+  volumetricKgPerCft: number;
+  transitDays: number | null;
+  slabs: RateSlab[];
+}
+
+export interface RateCardCharge {
+  chargeHeadId: string;
+  code: string;
+  name: string;
+  calcMethod: string;
+  value: number;
+  minAmount: number;
+  isAuto: boolean;
+}
+
+export interface RateCard {
+  card: RateCardSummary;
+  previousCardId: string | null;
+  notes: string | null;
+  lines: RateLine[];
+  charges: RateCardCharge[];
+}
+
+export interface QuoteCharge {
+  chargeHeadId: string;
+  code: string;
+  name: string;
+  calcMethod: string;
+  value: number;
+  amount: number;
+  editControl: string;
+  taxable: boolean;
+}
+
+export interface RateQuote {
+  found: boolean;
+  blocked: boolean;
+  message: string | null;
+  source: 'CLIENT_CARD' | 'STANDARD' | 'NONE';
+  rateCardId: string | null;
+  rateCardCode: string | null;
+  rateCardName: string | null;
+  currency: string | null;
+  lineId: string | null;
+  rateBasis: string | null;
+  rate: number | null;
+  actualWeightKg: number | null;
+  volumetricWeightKg: number | null;
+  chargeableWeightKg: number | null;
+  quantity: number | null;
+  freight: number | null;
+  minimumApplied: boolean;
+  charges: QuoteCharge[];
+  total: number | null;
+  transitDays: number | null;
+}

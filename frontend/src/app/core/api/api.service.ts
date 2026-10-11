@@ -3,7 +3,8 @@ import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { appSettings } from '../config';
 import {
-  AppUser, City, Company, CountryPack, DuplicateMatch, Location, Party, Permission, Region, Role, SystemInfo
+  AppUser, ChargeHead, City, Company, CountryPack, DuplicateMatch, Location, Party, Permission, RateCard,
+  RateCardSummary, RateQuote, Region, Role, SystemInfo
 } from './models';
 
 type Params = Record<string, string | number | boolean | null | undefined>;
@@ -92,6 +93,46 @@ export class ApiService {
 
   saveRole(id: string, body: unknown): Observable<Role> {
     return this.http.put<Role>(`${this.base}/roles/${id}`, body);
+  }
+
+  chargeHeads(): Observable<ChargeHead[]> {
+    return this.http.get<ChargeHead[]>(`${this.base}/charge-heads`);
+  }
+
+  loadDefaultChargeHeads(): Observable<ChargeHead[]> {
+    return this.http.post<ChargeHead[]>(`${this.base}/charge-heads/defaults`, {});
+  }
+
+  saveChargeHead(id: string | null, body: unknown): Observable<ChargeHead> {
+    return id
+      ? this.http.put<ChargeHead>(`${this.base}/charge-heads/${id}`, body)
+      : this.http.post<ChargeHead>(`${this.base}/charge-heads`, body);
+  }
+
+  rateCards(params: Params = {}): Observable<RateCardSummary[]> {
+    return this.http.get<RateCardSummary[]>(`${this.base}/rate-cards`, { params: toParams(params) });
+  }
+
+  rateCard(id: string): Observable<RateCard> {
+    return this.http.get<RateCard>(`${this.base}/rate-cards/${id}`);
+  }
+
+  saveRateCard(id: string | null, body: unknown): Observable<RateCard> {
+    return id
+      ? this.http.put<RateCard>(`${this.base}/rate-cards/${id}`, body)
+      : this.http.post<RateCard>(`${this.base}/rate-cards`, body);
+  }
+
+  setRateCardStatus(id: string, status: 'ACTIVE' | 'SUSPENDED', reason?: string): Observable<RateCard> {
+    return this.http.put<RateCard>(`${this.base}/rate-cards/${id}/status`, { status, reason: reason ?? null });
+  }
+
+  reviseRateCard(id: string, validFrom: string): Observable<RateCard> {
+    return this.http.post<RateCard>(`${this.base}/rate-cards/${id}/revise`, { validFrom });
+  }
+
+  rateLookup(params: Params): Observable<RateQuote> {
+    return this.http.get<RateQuote>(`${this.base}/rate-cards/lookup`, { params: toParams(params) });
   }
 
   softDelete(resource: string, id: string, reason: string): Observable<void> {

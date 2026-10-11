@@ -1,0 +1,68 @@
+<header class="page-head">
+  <div>
+    <h1>Rate cards</h1>
+    <p>Agreed rates per client, and standard rates for everyone else. Bookings pick the client card first.</p>
+  </div>
+  <div class="head-actions">
+    <a mat-stroked-button routerLink="/rate-calculator"><mat-icon>calculate</mat-icon>Rate calculator</a>
+    @if (session.can('rate_card.create')) {
+      <a mat-flat-button routerLink="/rate-cards/new"><mat-icon>add</mat-icon>New rate card</a>
+    }
+  </div>
+</header>
+
+<div class="toolbar">
+  <mat-form-field class="search-field">
+    <mat-icon matPrefix>search</mat-icon>
+    <mat-label>Search card, code or client</mat-label>
+    <input matInput type="search" [value]="search()" (input)="onSearch($any($event.target).value)" />
+  </mat-form-field>
+  <mat-form-field class="filter-field">
+    <mat-label>Status</mat-label>
+    <mat-select [ngModel]="status()" (ngModelChange)="onStatus($event)">
+      <mat-option [value]="null">All</mat-option>
+      @for (option of statusOptions; track option.value) { <mat-option [value]="option.value">{{ option.label }}</mat-option> }
+    </mat-select>
+  </mat-form-field>
+</div>
+
+<div class="panel">
+  @if (loading()) { <mat-progress-bar mode="indeterminate" class="loading-bar" /> }
+  <table mat-table [dataSource]="cards()" class="data-table clickable">
+    <ng-container matColumnDef="code">
+      <th mat-header-cell *matHeaderCellDef>Code</th>
+      <td mat-cell *matCellDef="let card" class="code">{{ card.code }} <span class="muted">v{{ card.version }}</span></td>
+    </ng-container>
+    <ng-container matColumnDef="name">
+      <th mat-header-cell *matHeaderCellDef>Name</th>
+      <td mat-cell *matCellDef="let card"><a [routerLink]="['/rate-cards', card.id]" class="row-link">{{ card.name }}</a></td>
+    </ng-container>
+    <ng-container matColumnDef="client">
+      <th mat-header-cell *matHeaderCellDef>Client</th>
+      <td mat-cell *matCellDef="let card">
+        @if (card.partyName) { {{ card.partyName }} } @else { <span class="tag info">Standard rates</span> }
+      </td>
+    </ng-container>
+    <ng-container matColumnDef="validity">
+      <th mat-header-cell *matHeaderCellDef>Valid</th>
+      <td mat-cell *matCellDef="let card">{{ card.validFrom }} – {{ card.validTo ?? 'open' }}</td>
+    </ng-container>
+    <ng-container matColumnDef="lines">
+      <th mat-header-cell *matHeaderCellDef class="num">Lanes</th>
+      <td mat-cell *matCellDef="let card" class="num">{{ card.lineCount }}</td>
+    </ng-container>
+    <ng-container matColumnDef="status">
+      <th mat-header-cell *matHeaderCellDef>Status</th>
+      <td mat-cell *matCellDef="let card"><span [class]="'tag ' + statusTag(card.status)">{{ humanize(card.status) }}</span></td>
+    </ng-container>
+    <tr mat-header-row *matHeaderRowDef="columns"></tr>
+    <tr mat-row *matRowDef="let row; columns: columns" (click)="open(row)"></tr>
+    <tr class="mat-mdc-row" *matNoDataRow>
+      <td class="empty" [attr.colspan]="columns.length">
+        @if (loading()) { Loading… }
+        @else if (search() || status()) { No rate cards match. }
+        @else { No rate cards yet. Start with your standard rates, then add client cards. }
+      </td>
+    </tr>
+  </table>
+</div>

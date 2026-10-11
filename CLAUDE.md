@@ -48,7 +48,7 @@ Health check: `GET /api/v1/system/info` returns app name, database time and tena
 - `core/api/ApiService` + `models.ts` mirror the backend records. Screens live in `features/<area>`,
   lazy-loaded from `app.routes.ts`, menu in `layout/shell.ts` (`NAV`, filtered by permission).
 - Edit forms open as MatDialog templates; deletes go through `DeleteDialog.ask(...)` (asks for a reason).
-  Messages via `NotifyService`. Shared page styles (`page-head`, `panel`, `form-grid`, `tag`) are in
+  Messages via `NotifyService`. City and client search boxes: `core/ui/CityPicker`, `core/ui/PartyPicker`. Shared page styles (`page-head`, `panel`, `form-grid`, `tag`) are in
   `src/styles.scss`.
 
 ## Backend structure
