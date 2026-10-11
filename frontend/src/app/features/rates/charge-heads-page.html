@@ -1,0 +1,130 @@
+<header class="page-head">
+  <div>
+    <h1>Charge heads</h1>
+    <p>Charges added to a GR besides freight. Client rate cards can set their own values.</p>
+  </div>
+  @if (session.can('rate_card.create')) {
+    <div class="head-actions">
+      <button mat-stroked-button (click)="loadDefaults()" matTooltip="Adds any missing standard heads; existing ones are kept">
+        <mat-icon>playlist_add</mat-icon>Add defaults
+      </button>
+      <button mat-flat-button (click)="openNew()"><mat-icon>add</mat-icon>Add charge head</button>
+    </div>
+  }
+</header>
+
+<div class="panel">
+  @if (loading()) { <mat-progress-bar mode="indeterminate" class="loading-bar" /> }
+  <table mat-table [dataSource]="heads()" class="data-table">
+    <ng-container matColumnDef="code">
+      <th mat-header-cell *matHeaderCellDef>Code</th>
+      <td mat-cell *matCellDef="let head" class="code">{{ head.code }}</td>
+    </ng-container>
+    <ng-container matColumnDef="name">
+      <th mat-header-cell *matHeaderCellDef>Name</th>
+      <td mat-cell *matCellDef="let head">
+        {{ head.name }}
+        @if (!head.active) { <span class="tag warn">Inactive</span> }
+      </td>
+    </ng-container>
+    <ng-container matColumnDef="method">
+      <th mat-header-cell *matHeaderCellDef>Calculated</th>
+      <td mat-cell *matCellDef="let head">{{ humanize(head.calcMethod) }}</td>
+    </ng-container>
+    <ng-container matColumnDef="value">
+      <th mat-header-cell *matHeaderCellDef>Default</th>
+      <td mat-cell *matCellDef="let head">
+        {{ valueLabel(head) }}
+        @if (head.minAmount > 0) { <div class="muted">min {{ head.minAmount }}</div> }
+      </td>
+    </ng-container>
+    <ng-container matColumnDef="auto">
+      <th mat-header-cell *matHeaderCellDef>On every GR</th>
+      <td mat-cell *matCellDef="let head">@if (head.isAuto) { <span class="tag ok">Auto</span> } @else { <span class="muted">Optional</span> }</td>
+    </ng-container>
+    <ng-container matColumnDef="edit">
+      <th mat-header-cell *matHeaderCellDef>At booking</th>
+      <td mat-cell *matCellDef="let head">{{ humanize(head.editControl) }}</td>
+    </ng-container>
+    <ng-container matColumnDef="actions">
+      <th mat-header-cell *matHeaderCellDef class="actions"><span class="sr-only">Actions</span></th>
+      <td mat-cell *matCellDef="let head" class="actions">
+        @if (session.can('rate_card.edit')) {
+          <button mat-icon-button (click)="openEdit(head)" [attr.aria-label]="'Edit ' + head.name" matTooltip="Edit"><mat-icon>edit</mat-icon></button>
+        }
+        @if (session.can('rate_card.delete') && !head.isSystem) {
+          <button mat-icon-button class="icon-button-danger" (click)="askDelete(head)" [attr.aria-label]="'Delete ' + head.name" matTooltip="Delete"><mat-icon>delete</mat-icon></button>
+        }
+      </td>
+    </ng-container>
+    <tr mat-header-row *matHeaderRowDef="columns"></tr>
+    <tr mat-row *matRowDef="let row; columns: columns"></tr>
+    <tr class="mat-mdc-row" *matNoDataRow>
+      <td class="empty" [attr.colspan]="columns.length">
+        @if (loading()) { Loading… } @else { No charge heads yet. Use "Add defaults" to start with the usual ones. }
+      </td>
+    </tr>
+  </table>
+</div>
+
+<ng-template #editor>
+  <h2 mat-dialog-title>{{ editing() ? 'Edit ' + editing()!.name : 'Add charge head' }}</h2>
+  <mat-dialog-content>
+    <form [formGroup]="form" (ngSubmit)="save()" id="head-form" class="form-grid">
+      <mat-form-field>
+        <mat-label>Code</mat-label>
+        <input matInput formControlName="code" class="upper" />
+        <mat-error>Letters, numbers, - and _ only.</mat-error>
+      </mat-form-field>
+      <mat-form-field>
+        <mat-label>Name</mat-label>
+        <input matInput formControlName="name" />
+        <mat-error>Enter a name.</mat-error>
+      </mat-form-field>
+      @if (!editing()?.isSystem) {
+        <mat-form-field>
+          <mat-label>Calculated</mat-label>
+          <mat-select formControlName="calcMethod">
+            @for (option of methodOptions; track option.value) { <mat-option [value]="option.value">{{ option.label }}</mat-option> }
+          </mat-select>
+        </mat-form-field>
+        <mat-form-field>
+          <mat-label>Default value</mat-label>
+          <input matInput type="number" min="0" formControlName="defaultValue" />
+          <mat-hint>Amount, rate per unit, or percent</mat-hint>
+        </mat-form-field>
+        <mat-form-field>
+          <mat-label>Minimum amount</mat-label>
+          <input matInput type="number" min="0" formControlName="minAmount" />
+        </mat-form-field>
+      }
+      <mat-form-field>
+        <mat-label>At booking</mat-label>
+        <mat-select formControlName="editControl">
+          @for (option of editOptions; track option.value) { <mat-option [value]="option.value">{{ option.label }}</mat-option> }
+        </mat-select>
+        <mat-hint>Whether the clerk can change the amount</mat-hint>
+      </mat-form-field>
+      <mat-form-field>
+        <mat-label>Tax code (SAC / HSN)</mat-label>
+        <input matInput formControlName="taxCode" />
+      </mat-form-field>
+      <mat-form-field>
+        <mat-label>Order on GR</mat-label>
+        <input matInput type="number" formControlName="sortOrder" />
+      </mat-form-field>
+      <div class="checks wide">
+        @if (!editing()?.isSystem) {
+          <mat-checkbox formControlName="isAuto">Add to every GR</mat-checkbox>
+          <mat-checkbox formControlName="active">Active</mat-checkbox>
+        }
+        <mat-checkbox formControlName="taxable">Taxable</mat-checkbox>
+      </div>
+    </form>
+    @if (formError()) { <p class="form-error" role="alert">{{ formError() }}</p> }
+  </mat-dialog-content>
+  <mat-dialog-actions align="end">
+    <button mat-button type="button" (click)="close()">Cancel</button>
+    <button mat-flat-button type="submit" form="head-form" [disabled]="saving()">{{ editing() ? 'Save changes' : 'Add charge head' }}</button>
+  </mat-dialog-actions>
+</ng-template>

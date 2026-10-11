@@ -18,12 +18,16 @@ interface NavGroup {
 const NAV: NavGroup[] = [
   {
     label: 'Daily work',
-    items: [{ label: 'Overview', path: '/', icon: 'home', permission: null }]
+    items: [
+      { label: 'Overview', path: '/', icon: 'home', permission: null },
+      { label: 'Rate calculator', path: '/rate-calculator', icon: 'calculate', permission: 'rate_card.view' }
+    ]
   },
   {
     label: 'Masters',
     items: [
       { label: 'Clients and parties', path: '/parties', icon: 'handshake', permission: 'party.view' },
+      { label: 'Rate cards', path: '/rate-cards', icon: 'sell', permission: 'rate_card.view' },
       { label: 'Offices and locations', path: '/locations', icon: 'apartment', permission: 'location.view' },
       { label: 'Cities', path: '/cities', icon: 'location_on', permission: 'city.view' }
     ]
@@ -32,6 +36,7 @@ const NAV: NavGroup[] = [
     label: 'Setup',
     items: [
       { label: 'Company', path: '/company', icon: 'badge', permission: 'company.view' },
+      { label: 'Charge heads', path: '/charge-heads', icon: 'receipt_long', permission: 'rate_card.view' },
       { label: 'Users', path: '/users', icon: 'group', permission: 'user.view' },
       { label: 'Roles and permissions', path: '/roles', icon: 'admin_panel_settings', permission: 'role.view' }
     ]

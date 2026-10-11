@@ -48,14 +48,15 @@ Health check: `GET /api/v1/system/info` returns app name, database time and tena
 - `core/api/ApiService` + `models.ts` mirror the backend records. Screens live in `features/<area>`,
   lazy-loaded from `app.routes.ts`, menu in `layout/shell.ts` (`NAV`, filtered by permission).
 - Edit forms open as MatDialog templates; deletes go through `DeleteDialog.ask(...)` (asks for a reason).
-  Messages via `NotifyService`. Shared page styles (`page-head`, `panel`, `form-grid`, `tag`) are in
+  Messages via `NotifyService`. City and client search boxes: `core/ui/CityPicker`, `core/ui/PartyPicker`. Shared page styles (`page-head`, `panel`, `form-grid`, `tag`) are in
   `src/styles.scss`.
 
 ## Backend structure
 
 Top-level packages under `com.aadvixon.tms` are modules: `platform` (tenancy, audit, recycle bin, numbering,
 tenant provisioning, errors), `company` (country packs, company, tax registrations), `location`, `geo`
-(cities, city services), `iam` (users, roles, permissions), `party` (consignors/consignees/bill-to).
+(cities, city services), `iam` (users, roles, permissions), `party` (consignors/consignees/bill-to), `rate` (charge heads,
+rate cards, `RateEngine` for rate lookup: client card, then standard rates; most specific line wins).
 Data access uses `JdbcClient` with explicit SQL; row mappers use `platform.db.Rows`.
 
 ## Multi-tenancy (read before touching data access)

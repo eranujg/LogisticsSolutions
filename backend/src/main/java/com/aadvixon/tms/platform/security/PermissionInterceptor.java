@@ -30,6 +30,8 @@ class PermissionInterceptor implements HandlerInterceptor, WebMvcConfigurer {
             Map.entry("roles", "role"),
             Map.entry("permissions", "role"),
             Map.entry("parties", "party"),
+            Map.entry("rate-cards", "rate_card"),
+            Map.entry("charge-heads", "rate_card"),
             Map.entry("number-series", "number_series"),
             Map.entry("audit", "audit"),
             Map.entry("recycle-bin", "recycle_bin"));

@@ -23,7 +23,7 @@ export class Dashboard implements OnInit {
   private readonly api = inject(ApiService);
   readonly session = inject(SessionService);
 
-  readonly counts = signal<{ companies: number; locations: number; parties: number; users: number } | null>(null);
+  readonly counts = signal<{ companies: number; locations: number; parties: number; rateCards: number; users: number } | null>(null);
 
   readonly steps = computed<SetupStep[]>(() => {
     const c = this.counts();
@@ -34,6 +34,7 @@ export class Dashboard implements OnInit {
       { label: 'Company details', detail: 'Legal name, country, GSTIN or other tax IDs', path: '/company', permission: 'company.view', done: c.companies > 0 },
       { label: 'Offices and locations', detail: 'Head office, booking and delivery offices, godowns', path: '/locations', permission: 'location.view', done: c.locations > 0 },
       { label: 'Clients and parties', detail: 'Consignors, consignees and bill-to parties', path: '/parties', permission: 'party.view', done: c.parties > 0 },
+      { label: 'Rates', detail: 'Standard rates and client rate cards used at booking', path: '/rate-cards', permission: 'rate_card.view', done: c.rateCards > 0 },
       { label: 'Staff users', detail: 'Clerks, managers and accountants with their roles', path: '/users', permission: 'user.view', done: c.users > 1 }
     ].filter((step) => this.session.can(step.permission));
   });
@@ -48,6 +49,7 @@ export class Dashboard implements OnInit {
       companies: count('company.view', () => this.api.companies()),
       locations: count('location.view', () => this.api.locations()),
       parties: count('party.view', () => this.api.parties({ limit: 200 })),
+      rateCards: count('rate_card.view', () => this.api.rateCards({ status: 'ACTIVE' })),
       users: count('user.view', () => this.api.users())
     }).subscribe((counts) => this.counts.set(counts));
   }
